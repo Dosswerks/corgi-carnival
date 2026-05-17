@@ -2,60 +2,131 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Corgi Carnival</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Jasper Junction</title>
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Jasper Junction">
+    <meta property="og:description" content="Herd sheep, cows & goats on a Welsh hillside in this corgi-powered herding game.">
+    <meta property="og:image" content="assets/jasper-junction-og.png">
+    <meta property="og:url" content="">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Jasper Junction">
+    <meta name="twitter:description" content="Herd sheep, cows & goats on a Welsh hillside in this corgi-powered herding game.">
+    <meta name="twitter:image" content="assets/jasper-junction-og.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a1a;
+            touch-action: none;
+        }
+        #game-canvas {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #orientation-prompt {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #1a1a1a;
+            color: #f0ece2;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 9999;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 20px;
+        }
+        #orientation-prompt .rotate-icon {
+            font-size: 3rem;
+        }
+        /* On mobile landscape, shrink the title footer to avoid covering game buttons */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #title-footer {
+                padding: 6px 12px !important;
+            }
+            #title-footer p {
+                font-size: 11px !important;
+                margin-bottom: 2px !important;
+            }
+            #title-footer form button svg {
+                width: 36px !important;
+                height: 45px !important;
+            }
+            #qr-code {
+                display: none !important;
+            }
+        }
+        /* On very short screens, hide footer entirely to prevent overlap */
+        @media (max-height: 380px) {
+            #title-footer {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="hub-container">
-        <header class="hub-header">
-            <div class="logo-area">
-                <canvas id="corgi-logo" width="120" height="90" aria-hidden="true"></canvas>
-            </div>
-            <h1 class="hub-title">Corgi Carnival</h1>
-            <p class="hub-tagline">A trio of corgi-powered games</p>
-        </header>
-
-        <main class="game-grid">
-            <a href="jasper-junction/index.html" class="game-card" id="card-jasper">
-                <div class="card-icon">
-                    <canvas class="card-canvas" id="canvas-jasper" width="100" height="80" aria-hidden="true"></canvas>
-                </div>
-                <div class="card-content">
-                    <h2 class="card-title">Jasper Junction</h2>
-                    <p class="card-tagline">Herd sheep, cows &amp; goats on a Welsh hillside</p>
-                </div>
-                <div class="card-badge">Herding</div>
-            </a>
-
-            <a href="archers-alley/index.html" class="game-card" id="card-archers">
-                <div class="card-icon">
-                    <canvas class="card-canvas" id="canvas-archers" width="100" height="80" aria-hidden="true"></canvas>
-                </div>
-                <div class="card-content">
-                    <h2 class="card-title">Archer's Alley</h2>
-                    <p class="card-tagline">Defend the carnival from incoming chaos</p>
-                </div>
-                <div class="card-badge">Kaboom</div>
-            </a>
-
-            <a href="peachy-polo/index.html" class="game-card" id="card-peachy">
-                <div class="card-icon">
-                    <canvas class="card-canvas" id="canvas-peachy" width="100" height="80" aria-hidden="true"></canvas>
-                </div>
-                <div class="card-content">
-                    <h2 class="card-title">Peachy Polo</h2>
-                    <p class="card-tagline">Bounce, break &amp; score with corgi flair</p>
-                </div>
-                <div class="card-badge">Breakout</div>
-            </a>
-        </main>
-
-        <footer class="hub-footer">
-            <p>&copy; 2026 Corgi Carnival &bull; All games best played in landscape</p>
-        </footer>
+    <canvas id="game-canvas"></canvas>
+    <div id="orientation-prompt">
+        <div class="rotate-icon">📱↔️</div>
+        <p>Please rotate your device to landscape</p>
     </div>
 
+    <!-- Title screen HTML overlay (for clickable tip jar + scannable QR) -->
+    <div id="title-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:50; pointer-events:none;">
+        <div id="title-footer" style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); padding:12px 20px; text-align:center; pointer-events:auto;">
+            <p style="margin:0 0 4px; color:#888; font-size:13px; font-family:sans-serif;">&copy; 2026 <a href="https://andrewdoss.com" target="_blank" rel="noopener noreferrer" style="color:#f5a623; text-decoration:none;">Andrew Doss</a></p>
+            <p style="margin:0 0 8px; color:#aaa; font-size:13px; font-family:sans-serif;">Enjoying the game? Tips help keep the games coming!</p>
+            <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+                <form action="https://www.paypal.com/donate" method="post" target="_blank">
+                    <input type="hidden" name="hosted_button_id" value="HDD77QKGC6XXN">
+                    <button type="submit" style="padding:0; background:none; border:none; cursor:pointer; display:inline-flex; flex-direction:column; align-items:center; gap:4px; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="75" viewBox="0 0 80 100" fill="none">
+                            <rect x="16" y="8" width="48" height="8" rx="2" fill="#aaa"/>
+                            <rect x="34" y="2" width="12" height="8" rx="2" fill="#999"/>
+                            <rect x="36" y="4" width="8" height="3" rx="1" fill="#777"/>
+                            <path d="M18 16 L16 82 Q16 90 24 90 L56 90 Q64 90 64 82 L62 16 Z" fill="rgba(180,220,255,0.18)" stroke="rgba(200,230,255,0.5)" stroke-width="2"/>
+                            <path d="M22 20 L21 75" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+                            <text x="40" y="38" text-anchor="middle" font-size="9" font-weight="bold" fill="rgba(255,255,255,0.7)" font-family="sans-serif" letter-spacing="1">TIP JAR</text>
+                            <g transform="rotate(-12 40 55)"><rect x="26" y="48" width="30" height="16" rx="2" fill="#3a7d44"/><text x="41" y="60" text-anchor="middle" font-size="12" font-weight="bold" fill="#6ec77a" font-family="serif">$</text></g>
+                            <g transform="rotate(8 40 60)"><rect x="24" y="54" width="30" height="16" rx="2" fill="#2e6b38"/><text x="39" y="66" text-anchor="middle" font-size="12" font-weight="bold" fill="#5cb868" font-family="serif">$</text></g>
+                            <g transform="rotate(-5 40 65)"><rect x="28" y="62" width="30" height="16" rx="2" fill="#357a3f"/><text x="43" y="74" text-anchor="middle" font-size="12" font-weight="bold" fill="#7dd48a" font-family="serif">$</text></g>
+                            <ellipse cx="30" cy="78" rx="6" ry="3" fill="#d4a017" stroke="#b8860b" stroke-width="1"/>
+                            <ellipse cx="42" cy="80" rx="5" ry="2.5" fill="#daa520" stroke="#b8860b" stroke-width="1"/>
+                            <ellipse cx="52" cy="77" rx="5" ry="3" fill="#c9960c" stroke="#a07608" stroke-width="1"/>
+                        </svg>
+                    </button>
+                </form>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                    <div id="qr-code" style="background:#fff; padding:4px; border-radius:4px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/scenes.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
