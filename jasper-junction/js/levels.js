@@ -103,12 +103,65 @@ JJ.Levels = (function () {
         },
     };
 
-    // Pen definitions
+    // Pen definitions - matched to background image zones
     const PENS = [
-        { type: JJ.EntityType.Sheep, label: 'Sheep', x: 50, y: 0, width: 540, height: 216, gateWidth: 120, closed: false },
-        { type: JJ.EntityType.Cow, label: 'Cows', x: 690, y: 0, width: 540, height: 216, gateWidth: 120, closed: false },
-        { type: JJ.EntityType.Goat, label: 'Goats', x: 1330, y: 0, width: 540, height: 216, gateWidth: 120, closed: false },
+        { type: JJ.EntityType.Sheep, label: 'Sheep', x: 182, y: 34, width: 357, height: 197, gateX: 289, gateY: 233, gateWidth: 131, closed: false },
+        { type: JJ.EntityType.Cow, label: 'Cows', x: 635, y: 31, width: 394, height: 198, gateX: 724, gateY: 237, gateWidth: 181, closed: false },
+        { type: JJ.EntityType.Goat, label: 'Goats', x: 1127, y: 31, width: 379, height: 196, gateX: 1224, gateY: 232, gateWidth: 178, closed: false },
     ];
+
+    // Play field bounds (where animals can roam) - multiple rectangles
+    const FIELD_RECTS = [
+        { x: 174, y: 251, width: 1325, height: 323 },   // Main upper field (y: 251-574)
+        { x: 132, y: 540, width: 1181, height: 192 },   // Lower field (overlaps upper by 34px)
+        { x: 1482, y: 420, width: 55, height: 150 },    // Right extension
+        { x: 140, y: 350, width: 50, height: 224 },     // Left edge taper
+    ];
+
+    // Combined bounding box (used for simple checks)
+    const FIELD_BOUNDS = {
+        x: 132,
+        y: 251,
+        width: 1405,
+        height: 481, // y: 251 to 732
+    };
+
+    function isInField(x, y, radius) {
+        // Check if center point is in any field rect (ignore radius for containment check)
+        for (const rect of FIELD_RECTS) {
+            if (x >= rect.x &&
+                x <= rect.x + rect.width &&
+                y >= rect.y &&
+                y <= rect.y + rect.height) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function constrainToField(x, y, radius) {
+        // If center is in a valid rect, no constraint needed
+        if (isInField(x, y, 0)) return { x, y };
+
+        // Find the nearest valid position in any rect (using radius for edge padding)
+        let bestX = x, bestY = y;
+        let bestDist = Infinity;
+
+        for (const rect of FIELD_RECTS) {
+            const cx = Math.max(rect.x + radius, Math.min(rect.x + rect.width - radius, x));
+            const cy = Math.max(rect.y + radius, Math.min(rect.y + rect.height - radius, y));
+            const dx = cx - x;
+            const dy = cy - y;
+            const dist = dx * dx + dy * dy;
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestX = cx;
+                bestY = cy;
+            }
+        }
+
+        return { x: bestX, y: bestY };
+    }
 
     const MAX_SPEED = 135; // Speed cap in px/s
 
@@ -124,13 +177,19 @@ JJ.Levels = (function () {
         return PENS.map(p => ({ ...p, closed: false }));
     }
 
+    function getFieldBounds() {
+        return { ...FIELD_BOUNDS };
+    }
+
     function spawnAnimals(config) {
         const animals = [];
+        // Spawn within the main upper field rect
+        const upperRect = FIELD_RECTS[0];
         const spawnRegion = {
-            x: JJ.CANVAS_WIDTH * 0.3,
-            y: JJ.CANVAS_HEIGHT * 0.3,
-            width: JJ.CANVAS_WIDTH * 0.4,
-            height: JJ.CANVAS_HEIGHT * 0.4,
+            x: upperRect.x + upperRect.width * 0.1,
+            y: upperRect.y + upperRect.height * 0.15,
+            width: upperRect.width * 0.8,
+            height: upperRect.height * 0.7,
         };
 
         const types = [
@@ -247,6 +306,9 @@ JJ.Levels = (function () {
     return {
         getConfig,
         getPens,
+        getFieldBounds,
+        isInField,
+        constrainToField,
         spawnAnimals,
         calculateScore,
         isLastLevel,

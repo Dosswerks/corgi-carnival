@@ -169,8 +169,65 @@ JJ.Physics = (function () {
 
     function constrainToBounds(entity) {
         const r = entity.collisionRadius;
-        entity.position.x = Math.max(r, Math.min(JJ.CANVAS_WIDTH - r, entity.position.x));
-        entity.position.y = Math.max(r, Math.min(JJ.CANVAS_HEIGHT - r, entity.position.y));
+
+        // Allow animals to move up into gate zones when horizontally aligned
+        let allowGate = false;
+        let gateMinY = 0;
+        if (JJ.Levels) {
+            const pens = JJ.Levels.getPens();
+            const fieldTop = 251; // top of upper field rect
+            for (const pen of pens) {
+                if (entity.position.x >= pen.gateX - 25 &&
+                    entity.position.x <= pen.gateX + pen.gateWidth + 25 &&
+                    entity.position.y < fieldTop + 50) {
+                    // Animal is near the top of the field and aligned with gate
+                    allowGate = true;
+                    gateMinY = pen.gateY - 30;
+                    break;
+                }
+            }
+        }
+
+        // If near gate, override the top boundary to let animal pass through
+        if (allowGate) {
+            const r = entity.collisionRadius;
+            entity.position.y = Math.max(gateMinY + r, entity.position.y);
+        }
+
+        // Constrain to field rectangles
+        if (JJ.Levels && JJ.Levels.constrainToField) {
+            const constrained = JJ.Levels.constrainToField(entity.position.x, entity.position.y, r);
+
+            if (allowGate) {
+                // Only constrain X, let Y pass through to gate
+                if (entity.type !== JJ.EntityType.Jasper && constrained.x !== entity.position.x) {
+                    entity.velocity.x = 0;
+                    if (entity.velocity.y === 0) {
+                        entity.velocity.y = (Math.random() > 0.5 ? 1 : -1) * entity.baseSpeed * 0.5;
+                    }
+                }
+                entity.position.x = constrained.x;
+            } else {
+                if (entity.type !== JJ.EntityType.Jasper) {
+                    // Hit horizontal boundary - redirect along wall
+                    if (constrained.x !== entity.position.x) {
+                        entity.velocity.x = 0;
+                        if (entity.velocity.y === 0) {
+                            entity.velocity.y = (Math.random() > 0.5 ? 1 : -1) * entity.baseSpeed * 0.5;
+                        }
+                    }
+                    // Hit vertical boundary - redirect along wall
+                    if (constrained.y !== entity.position.y) {
+                        entity.velocity.y = 0;
+                        if (entity.velocity.x === 0) {
+                            entity.velocity.x = (Math.random() > 0.5 ? 1 : -1) * entity.baseSpeed * 0.5;
+                        }
+                    }
+                }
+                entity.position.x = constrained.x;
+                entity.position.y = constrained.y;
+            }
+        }
     }
 
     function applyCornerEscape(entity, dt) {

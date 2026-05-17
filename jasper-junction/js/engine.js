@@ -10,8 +10,8 @@ const JJ = window.JJ || {};
 window.JJ = JJ;
 
 // Constants
-JJ.CANVAS_WIDTH = 1920;
-JJ.CANVAS_HEIGHT = 1080;
+JJ.CANVAS_WIDTH = 1676;
+JJ.CANVAS_HEIGHT = 939;
 JJ.FIXED_DT = 1 / 60; // 16.67ms
 JJ.MAX_TICKS_PER_FRAME = 4;
 
@@ -88,8 +88,8 @@ JJ.Engine = (function () {
         const prompt = document.getElementById('orientation-prompt');
         if (!prompt) return;
 
-        const isPortrait = window.innerHeight > window.innerWidth;
-        const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const isPortrait = window.innerHeight > window.innerWidth * 1.2; // More lenient ratio
+        const isMobile = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth < 1024;
 
         if (isMobile && isPortrait) {
             prompt.style.display = 'flex';

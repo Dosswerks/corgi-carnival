@@ -41,6 +41,21 @@ JJ.AI = (function () {
             let vx = (dx / dist) * fleeSpeed;
             let vy = (dy / dist) * fleeSpeed;
 
+            // Gate funneling: if near top of field, steer toward matching gate
+            const fieldTop = 251;
+            if (sheep.position.y < fieldTop + 60) {
+                const pens = JJ.Levels ? JJ.Levels.getPens() : [];
+                for (const pen of pens) {
+                    if (pen.type === sheep.type) {
+                        const gateCenterX = pen.gateX + pen.gateWidth / 2;
+                        const toGateX = gateCenterX - sheep.position.x;
+                        // Steer toward gate center
+                        vx += toGateX * 0.8;
+                        break;
+                    }
+                }
+            }
+
             // Flock cohesion - adjust toward nearby sheep
             const nearbySheep = allAnimals.filter(a =>
                 a.type === JJ.EntityType.Sheep &&
@@ -150,8 +165,24 @@ JJ.AI = (function () {
 
             if (cow.state === JJ.AnimalState.Fleeing) {
                 const fleeSpeed = cow.baseSpeed * cow.speedMultiplier;
-                cow.velocity.x = (dx / dist) * fleeSpeed;
-                cow.velocity.y = (dy / dist) * fleeSpeed;
+                let cvx = (dx / dist) * fleeSpeed;
+                let cvy = (dy / dist) * fleeSpeed;
+
+                // Gate funneling
+                const fieldTop = 251;
+                if (cow.position.y < fieldTop + 60) {
+                    const pens = JJ.Levels ? JJ.Levels.getPens() : [];
+                    for (const pen of pens) {
+                        if (pen.type === cow.type) {
+                            const gateCenterX = pen.gateX + pen.gateWidth / 2;
+                            cvx += (gateCenterX - cow.position.x) * 0.8;
+                            break;
+                        }
+                    }
+                }
+
+                cow.velocity.x = cvx;
+                cow.velocity.y = cvy;
             }
         } else {
             // Decelerate if was fleeing
@@ -256,8 +287,24 @@ JJ.AI = (function () {
 
             if (goat.state === JJ.AnimalState.Fleeing) {
                 const fleeSpeed = goat.baseSpeed * goat.speedMultiplier;
-                goat.velocity.x = (dx / dist) * fleeSpeed;
-                goat.velocity.y = (dy / dist) * fleeSpeed;
+                let gvx = (dx / dist) * fleeSpeed;
+                let gvy = (dy / dist) * fleeSpeed;
+
+                // Gate funneling
+                const fieldTop = 251;
+                if (goat.position.y < fieldTop + 60) {
+                    const pens = JJ.Levels ? JJ.Levels.getPens() : [];
+                    for (const pen of pens) {
+                        if (pen.type === goat.type) {
+                            const gateCenterX = pen.gateX + pen.gateWidth / 2;
+                            gvx += (gateCenterX - goat.position.x) * 0.8;
+                            break;
+                        }
+                    }
+                }
+
+                goat.velocity.x = gvx;
+                goat.velocity.y = gvy;
             }
         } else {
             goat.state = JJ.AnimalState.Wandering;

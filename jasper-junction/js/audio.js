@@ -8,6 +8,40 @@
 JJ.Audio = (function () {
     let audioCtx = null;
     let initialized = false;
+    // SFX audio buffers (loaded from MP3 files)
+    let sfxBuffers = {};
+    const SFX_FILES = {
+        bark: 'assets/bark.mp3',
+        sheep_bleat: 'assets/sheep-bleat.mp3',
+        cow_moo: 'assets/cow-moo.mp3',
+        goat_bleat: 'assets/goat-bleat.mp3',
+        goat_scream: 'assets/goat-scream.mp3',
+        impact: 'assets/impact.mp3',
+        gate_close: 'assets/gate-close.mp3',
+        level_start: 'assets/level-start.mp3',
+        celebration: 'assets/celebration.mp3',
+        game_over: 'assets/game-over.mp3',
+    };
+
+    function loadSFX() {
+        if (!audioCtx) return;
+        Object.keys(SFX_FILES).forEach(id => {
+            fetch(SFX_FILES[id])
+                .then(response => {
+                    if (!response.ok) return null;
+                    return response.arrayBuffer();
+                })
+                .then(arrayBuffer => {
+                    if (!arrayBuffer) return;
+                    return audioCtx.decodeAudioData(arrayBuffer);
+                })
+                .then(buffer => {
+                    if (buffer) sfxBuffers[id] = buffer;
+                })
+                .catch(e => console.warn('SFX load failed:', id, e));
+        });
+    }
+
     let activeSFX = [];
     const MAX_CONCURRENT_SFX = 4;
 
@@ -33,42 +67,62 @@ JJ.Audio = (function () {
     let originalMusicVolume = 0.4;
 
     function init() {
-        // Defer AudioContext creation until first user interaction
-        const startAudio = () => {
-            if (initialized) return;
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                masterGain = audioCtx.createGain();
-                masterGain.connect(audioCtx.destination);
+        // Try to create AudioContext immediately
+        tryCreateContext();
 
-                musicGain = audioCtx.createGain();
-                musicGain.connect(masterGain);
-                musicGain.gain.value = volumes.music;
+        // Also try on any user interaction (for browsers that block without gesture)
+        document.addEventListener('touchstart', tryCreateContext);
+        document.addEventListener('mousedown', tryCreateContext);
+        document.addEventListener('keydown', tryCreateContext);
+    }
 
-                ambientGain = audioCtx.createGain();
-                ambientGain.connect(masterGain);
-                ambientGain.gain.value = volumes.ambient;
+    let pendingMusic = false;
+    let pendingAmbient = false;
 
-                sfxGain = audioCtx.createGain();
-                sfxGain.connect(masterGain);
-                sfxGain.gain.value = volumes.sfx;
+    function tryCreateContext() {
+        if (initialized) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-                initialized = true;
-            } catch (e) {
-                console.warn('Audio initialization failed:', e);
+            // Resume if suspended (Safari/Chrome autoplay policy)
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
             }
-            document.removeEventListener('touchstart', startAudio);
-            document.removeEventListener('mousedown', startAudio);
-            document.removeEventListener('keydown', startAudio);
-        };
 
-        document.addEventListener('touchstart', startAudio, { once: true });
-        document.addEventListener('mousedown', startAudio, { once: true });
-        document.addEventListener('keydown', startAudio, { once: true });
+            masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
+
+            musicGain = audioCtx.createGain();
+            musicGain.connect(masterGain);
+            musicGain.gain.value = volumes.music;
+
+            ambientGain = audioCtx.createGain();
+            ambientGain.connect(masterGain);
+            ambientGain.gain.value = volumes.ambient;
+
+            sfxGain = audioCtx.createGain();
+            sfxGain.connect(masterGain);
+            sfxGain.gain.value = volumes.sfx;
+
+            initialized = true;
+            loadSFX();
+
+            // Retry music/ambient if gameplay already requested them
+            if (pendingMusic) playMusic();
+            if (pendingAmbient) playAmbient();
+
+            // Clean up listeners
+            document.removeEventListener('touchstart', tryCreateContext);
+            document.removeEventListener('mousedown', tryCreateContext);
+            document.removeEventListener('keydown', tryCreateContext);
+        } catch (e) {
+            console.warn('Audio initialization failed:', e);
+        }
     }
 
     function playSFX(id, priority) {
         if (!initialized || !audioCtx || muted.sfx) return;
+        if (!sfxBuffers[id]) return; // Not loaded yet
 
         // Evict oldest if at capacity
         if (activeSFX.length >= MAX_CONCURRENT_SFX) {
@@ -83,12 +137,8 @@ JJ.Audio = (function () {
         const recentSFX = activeSFX.filter(s => now - s.startTime < 0.5);
         const volumeReduction = recentSFX.length > 0 ? 0.5 : 1;
 
-        // Generate synthesized SFX
-        const buffer = generateSFX(id);
-        if (!buffer) return;
-
         const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
+        source.buffer = sfxBuffers[id];
 
         const gainNode = audioCtx.createGain();
         gainNode.gain.value = volumes.sfx * volumeReduction;
@@ -120,104 +170,62 @@ JJ.Audio = (function () {
         }, 300);
     }
 
-    function generateSFX(id) {
-        if (!audioCtx) return null;
-        const sampleRate = audioCtx.sampleRate;
-        let duration, buffer, data;
-
-        switch (id) {
-            case 'bark':
-                duration = 0.2;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    const freq = 400 - t * 800;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * (1 - t / duration) * 0.5;
-                    data[i] += (Math.random() - 0.5) * 0.1 * (1 - t / duration);
-                }
-                break;
-
-            case 'sheep_bleat':
-                duration = 0.4;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    const freq = 600 + Math.sin(t * 20) * 100;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * (1 - t / duration) * 0.3;
-                }
-                break;
-
-            case 'cow_moo':
-                duration = 0.6;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    const freq = 150 + Math.sin(t * 3) * 30;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * (1 - t / duration) * 0.4;
-                }
-                break;
-
-            case 'goat_bleat':
-                duration = 0.3;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    const freq = 800 + Math.sin(t * 30) * 200;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * (1 - t / duration) * 0.3;
-                }
-                break;
-
-            case 'goat_scream':
-                duration = 0.5;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    const freq = 1000 + Math.sin(t * 50) * 400;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * (1 - t / duration) * 0.4;
-                    data[i] += (Math.random() - 0.5) * 0.2 * (1 - t / duration);
-                }
-                break;
-
-            case 'impact':
-                duration = 0.15;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    data[i] = (Math.random() - 0.5) * (1 - t / duration) * 0.6;
-                }
-                break;
-
-            case 'gate_close':
-                duration = 0.3;
-                buffer = audioCtx.createBuffer(1, sampleRate * duration, sampleRate);
-                data = buffer.getChannelData(0);
-                for (let i = 0; i < data.length; i++) {
-                    const t = i / sampleRate;
-                    const freq = 200 - t * 300;
-                    data[i] = Math.sin(2 * Math.PI * freq * t) * (1 - t / duration) * 0.5;
-                    data[i] += (Math.random() - 0.5) * 0.3 * (1 - t / duration);
-                }
-                break;
-
-            default:
-                return null;
-        }
-
-        return buffer;
-    }
-
     function playMusic() {
-        // Placeholder - would load and loop music
+        if (!initialized || !audioCtx) {
+            pendingMusic = true;
+            return;
+        }
+        if (muted.music) return;
+        if (musicSource) return; // Already playing
+
+        // Load MP3 file
+        fetch('assets/music.mp3')
+            .then(response => {
+                if (!response.ok) return null;
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => {
+                if (!arrayBuffer) return;
+                return audioCtx.decodeAudioData(arrayBuffer);
+            })
+            .then(buffer => {
+                if (!buffer || musicSource) return;
+                musicSource = audioCtx.createBufferSource();
+                musicSource.buffer = buffer;
+                musicSource.loop = true;
+                musicSource.connect(musicGain);
+                musicSource.start();
+            })
+            .catch(e => console.warn('Music load failed:', e));
     }
 
     function playAmbient() {
-        // Placeholder - would load and loop ambient
+        if (!initialized || !audioCtx) {
+            pendingAmbient = true;
+            return;
+        }
+        if (muted.ambient) return;
+        if (ambientSource) return; // Already playing
+
+        // Load MP3 file
+        fetch('assets/ambient.mp3')
+            .then(response => {
+                if (!response.ok) return null;
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => {
+                if (!arrayBuffer) return;
+                return audioCtx.decodeAudioData(arrayBuffer);
+            })
+            .then(buffer => {
+                if (!buffer || ambientSource) return;
+                ambientSource = audioCtx.createBufferSource();
+                ambientSource.buffer = buffer;
+                ambientSource.loop = true;
+                ambientSource.connect(ambientGain);
+                ambientSource.start();
+            })
+            .catch(e => console.warn('Ambient load failed:', e));
     }
 
     function stopAll() {

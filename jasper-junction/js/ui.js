@@ -11,54 +11,56 @@ JJ.UI = (function () {
 
         ctx.save();
 
-        // Timer (top center)
-        const minutes = Math.floor(gameState.elapsedTime / 60);
-        const seconds = Math.floor(gameState.elapsedTime % 60);
+        // === HUD in lower-right corner ===
+        const hudX = JJ.CANVAS_WIDTH - 300;
+        const hudY = 750;
+
+        // Timer (countdown)
+        const remaining = Math.max(0, (gameState.maxTime || 120) - gameState.elapsedTime);
+        const minutes = Math.floor(remaining / 60);
+        const seconds = Math.floor(remaining % 60);
         const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.beginPath();
-        ctx.roundRect(JJ.CANVAS_WIDTH / 2 - 60, 225, 120, 40, 8);
+        ctx.roundRect(hudX, hudY, 280, 130, 10);
         ctx.fill();
 
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(timeStr, JJ.CANVAS_WIDTH / 2, 252);
-
-        // Level number (top left)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.beginPath();
-        ctx.roundRect(10, 225, 140, 36, 8);
-        ctx.fill();
-
+        // Level number
         ctx.fillStyle = '#f5a623';
-        ctx.font = 'bold 20px sans-serif';
+        ctx.font = 'bold 18px sans-serif';
         ctx.textAlign = 'left';
         const levelText = gameState.levelNumber === 0 ? 'Tutorial' : 'Level ' + gameState.levelNumber;
-        ctx.fillText(levelText, 20, 250);
+        ctx.fillText(levelText, hudX + 12, hudY + 24);
 
-        // Animal counts (top right)
-        drawAnimalCounts(ctx, gameState);
+        // Timer
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 22px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(timeStr, hudX + 268, hudY + 24);
+
+        // Animal counts
+        const counts = gameState.remainingCounts || { sheep: 0, cow: 0, goat: 0 };
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillText('🐑 ' + counts.sheep + ' remaining', hudX + 12, hudY + 55);
+        ctx.fillText('🐄 ' + counts.cow + ' remaining', hudX + 12, hudY + 80);
+        ctx.fillText('🐐 ' + counts.goat + ' remaining', hudX + 12, hudY + 105);
 
         // Score
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.beginPath();
-        ctx.roundRect(JJ.CANVAS_WIDTH - 160, 225, 150, 36, 8);
-        ctx.fill();
-
         ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 20px sans-serif';
+        ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText('Score: ' + gameState.score, JJ.CANVAS_WIDTH - 20, 250);
+        ctx.fillText('Score: ' + gameState.score, hudX + 268, hudY + 118);
 
-        // Bark cooldown indicator
+        // Bark cooldown indicator (near Jasper)
         drawBarkIndicator(ctx, gameState);
 
         // Bark button
         drawBarkButton(ctx);
 
-        // Pause button
+        // Pause button (top-right)
         drawPauseButton(ctx);
 
         // Directional indicators
@@ -166,7 +168,7 @@ JJ.UI = (function () {
 
     function drawPauseButton(ctx) {
         const px = JJ.CANVAS_WIDTH - 40;
-        const py = 240;
+        const py = 40;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.beginPath();

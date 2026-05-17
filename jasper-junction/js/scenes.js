@@ -10,19 +10,29 @@ JJ.Scenes = {};
 // === MAIN MENU ===
 JJ.Scenes.MainMenu = function () {
     const buttons = [
-        { label: 'Continue', action: 'continue' },
+        { label: 'Tutorial', action: 'tutorial' },
         { label: 'New Game', action: 'newgame' },
-        { label: 'Level Select', action: 'levelselect' },
-        { label: 'Settings', action: 'settings' },
-        { label: 'Credits', action: 'credits' },
-        { label: '← Corgi Carnival', action: 'hub' },
     ];
-    let hoverIndex = -1;
+    let logoImage = null;
+    let logoLoaded = false;
+    let bgImage = null;
+    let bgLoaded = false;
+    let activeButton = -1; // For hover/tap visual feedback
+
+    // Load logo
+    logoImage = new Image();
+    logoImage.onload = function () { logoLoaded = true; };
+    logoImage.src = 'assets/jasper-junction-logo.png';
+
+    // Load menu background
+    bgImage = new Image();
+    bgImage.onload = function () { bgLoaded = true; };
+    bgImage.src = 'assets/jasper-junction-menu-bg.jpg';
 
     function getButtonRect(i) {
-        const bw = 260, bh = 48;
+        const bw = 260, bh = 52;
         const x = JJ.CANVAS_WIDTH / 2 - bw / 2;
-        const y = 400 + i * 64;
+        const y = 520 + i * 68;
         return { x, y, w: bw, h: bh };
     }
 
@@ -31,51 +41,98 @@ JJ.Scenes.MainMenu = function () {
         onEnter() {
             const canvas = JJ.Engine.getCanvas();
             canvas.addEventListener('click', this._onClick);
-            canvas.addEventListener('touchstart', this._onTouch);
+            canvas.addEventListener('touchstart', this._onTouchStart);
+            canvas.addEventListener('touchend', this._onTouchEnd);
+            canvas.addEventListener('mousemove', this._onMouseMove);
+            canvas.addEventListener('mouseleave', this._onMouseLeave);
         },
         onExit() {
             const canvas = JJ.Engine.getCanvas();
             canvas.removeEventListener('click', this._onClick);
-            canvas.removeEventListener('touchstart', this._onTouch);
+            canvas.removeEventListener('touchstart', this._onTouchStart);
+            canvas.removeEventListener('touchend', this._onTouchEnd);
+            canvas.removeEventListener('mousemove', this._onMouseMove);
+            canvas.removeEventListener('mouseleave', this._onMouseLeave);
         },
         _onClick(e) {
             handleMenuClick(e.clientX, e.clientY);
         },
-        _onTouch(e) {
+        _onTouchStart(e) {
             e.preventDefault();
             const t = e.touches[0];
-            handleMenuClick(t.clientX, t.clientY);
+            const pos = getCanonicalPos(t.clientX, t.clientY);
+            activeButton = getButtonAt(pos.x, pos.y);
+        },
+        _onTouchEnd(e) {
+            e.preventDefault();
+            if (activeButton >= 0) {
+                executeMenuAction(buttons[activeButton].action);
+            }
+            activeButton = -1;
+        },
+        _onMouseMove(e) {
+            const pos = getCanonicalPos(e.clientX, e.clientY);
+            activeButton = getButtonAt(pos.x, pos.y);
+        },
+        _onMouseLeave() {
+            activeButton = -1;
         },
         update(dt) {},
         render(ctx) {
             // Background
-            ctx.fillStyle = '#1a2a1a';
-            ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            if (bgLoaded) {
+                ctx.drawImage(bgImage, 0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            } else {
+                ctx.fillStyle = '#1a2a1a';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            }
 
-            // Title
-            ctx.fillStyle = '#f5a623';
-            ctx.font = 'bold 64px Georgia, serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Jasper Junction', JJ.CANVAS_WIDTH / 2, 200);
+            // Logo image
+            if (logoLoaded) {
+                const logoH = 320;
+                const logoW = logoH * (logoImage.width / logoImage.height);
+                const logoX = JJ.CANVAS_WIDTH / 2 - logoW / 2;
+                const logoY = 50;
+                ctx.drawImage(logoImage, logoX, logoY, logoW, logoH);
+            } else {
+                ctx.fillStyle = '#f5a623';
+                ctx.font = 'bold 64px Georgia, serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Jasper Junction', JJ.CANVAS_WIDTH / 2, 200);
+            }
 
-            ctx.fillStyle = '#a8a4b8';
-            ctx.font = '24px sans-serif';
-            ctx.fillText('A Corgi Carnival Game', JJ.CANVAS_WIDTH / 2, 250);
-
-            // Subtitle
+            // Tagline
             ctx.fillStyle = '#ccc';
             ctx.font = '18px sans-serif';
-            ctx.fillText('Herd sheep, cows & goats on a Welsh hillside', JJ.CANVAS_WIDTH / 2, 320);
+            ctx.textAlign = 'center';
+            ctx.fillText('Herd sheep, cows & goats on a Welsh hillside', JJ.CANVAS_WIDTH / 2, 450);
 
-            // Buttons
+            ctx.fillStyle = '#a8a4b8';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('A Corgi Carnival Game', JJ.CANVAS_WIDTH / 2, 478);
+
+            // Buttons with hover/active states
             buttons.forEach((btn, i) => {
                 const r = getButtonRect(i);
-                ctx.fillStyle = 'rgba(74, 124, 63, 0.8)';
+                const isActive = (i === activeButton);
+
+                if (isActive) {
+                    ctx.fillStyle = 'rgba(100, 160, 80, 0.95)';
+                    ctx.shadowColor = 'rgba(139, 195, 74, 0.5)';
+                    ctx.shadowBlur = 10;
+                } else {
+                    ctx.fillStyle = 'rgba(74, 124, 63, 0.8)';
+                }
+
                 ctx.beginPath();
                 ctx.roundRect(r.x, r.y, r.w, r.h, 8);
                 ctx.fill();
-                ctx.strokeStyle = '#8BC34A';
-                ctx.lineWidth = 2;
+                ctx.shadowBlur = 0;
+
+                ctx.strokeStyle = isActive ? '#aade6a' : '#8BC34A';
+                ctx.lineWidth = isActive ? 3 : 2;
                 ctx.stroke();
 
                 ctx.fillStyle = '#fff';
@@ -84,55 +141,52 @@ JJ.Scenes.MainMenu = function () {
                 ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 7);
             });
 
-            // Score display
-            const save = JJ.Save.getData();
-            ctx.fillStyle = '#FFD700';
-            ctx.font = '18px sans-serif';
+            // Footer
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, JJ.CANVAS_HEIGHT - 50, JJ.CANVAS_WIDTH, 50);
+            ctx.fillStyle = '#888';
+            ctx.font = '13px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('Total Score: ' + save.cumulativeScore, JJ.CANVAS_WIDTH / 2, 820);
+            ctx.fillText('© 2026 Andrew Doss • Corgi Carnival', JJ.CANVAS_WIDTH / 2, JJ.CANVAS_HEIGHT - 20);
         },
     };
 
-    function handleMenuClick(clientX, clientY) {
+    function getCanonicalPos(clientX, clientY) {
         const scale = JJ.Engine.getScale();
-        const offset = JJ.Engine.getOffset();
         const canvas = JJ.Engine.getCanvas();
         const rect = canvas.getBoundingClientRect();
-        const cx = (clientX - rect.left) / scale;
-        const cy = (clientY - rect.top) / scale;
+        return {
+            x: (clientX - rect.left) / scale,
+            y: (clientY - rect.top) / scale,
+        };
+    }
 
-        buttons.forEach((btn, i) => {
+    function getButtonAt(cx, cy) {
+        for (let i = 0; i < buttons.length; i++) {
             const r = getButtonRect(i);
             if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) {
-                executeMenuAction(btn.action);
+                return i;
             }
-        });
+        }
+        return -1;
+    }
+
+    function handleMenuClick(clientX, clientY) {
+        const pos = getCanonicalPos(clientX, clientY);
+        const idx = getButtonAt(pos.x, pos.y);
+        if (idx >= 0) {
+            executeMenuAction(buttons[idx].action);
+        }
     }
 
     function executeMenuAction(action) {
         const save = JJ.Save.getData();
         switch (action) {
-            case 'continue':
-                const level = save.tutorialCompleted ? Math.max(1, save.currentLevel) : 0;
-                JJ.Engine.replaceScene(JJ.Scenes.Gameplay(level));
+            case 'tutorial':
+                JJ.Engine.replaceScene(JJ.Scenes.Gameplay(0));
                 break;
             case 'newgame':
-                if (confirm('Start a new game? This will clear your progress.')) {
-                    JJ.Save.clear();
-                    JJ.Engine.replaceScene(JJ.Scenes.Gameplay(0));
-                }
-                break;
-            case 'levelselect':
-                JJ.Engine.replaceScene(JJ.Scenes.LevelSelect());
-                break;
-            case 'settings':
-                JJ.Engine.pushScene(JJ.Scenes.Settings());
-                break;
-            case 'credits':
-                JJ.Engine.pushScene(JJ.Scenes.Credits());
-                break;
-            case 'hub':
-                window.location.href = '../index.html';
+                JJ.Engine.replaceScene(JJ.Scenes.Gameplay(save.tutorialCompleted ? Math.max(1, save.currentLevel) : 0));
                 break;
         }
     }
@@ -177,8 +231,12 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             // Reset entities
             JJ.Entities.reset();
 
-            // Spawn Jasper
-            const jasper = JJ.Entities.createJasper(JJ.CANVAS_WIDTH / 2, JJ.CANVAS_HEIGHT * 0.9);
+            // Spawn Jasper (center of field, near bottom)
+            const fieldBounds = JJ.Levels.getFieldBounds();
+            const jasper = JJ.Entities.createJasper(
+                fieldBounds.x + fieldBounds.width / 2,
+                fieldBounds.y + fieldBounds.height * 0.85
+            );
             JJ.Entities.addEntity(jasper);
 
             // Spawn animals
@@ -193,6 +251,13 @@ JJ.Scenes.Gameplay = function (levelNumber) {
 
             // Init render
             JJ.Render.init();
+
+            // Start audio
+            if (JJ.Audio) {
+                JJ.Audio.playSFX('level_start');
+                JJ.Audio.playMusic();
+                JJ.Audio.playAmbient();
+            }
 
             // Tutorial state
             if (levelNumber === 0) {
@@ -212,7 +277,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
 
                 // Time's up
                 if (elapsedTime >= config.maxTime) {
-                    this.endLevel();
+                    this.endLevel(true); // timeout
                     return;
                 }
 
@@ -254,7 +319,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             // Check win condition
             const remaining = JJ.Entities.getUncorralledAnimals().length;
             if (remaining === 0 && !isComplete) {
-                this.endLevel();
+                this.endLevel(false); // completed
             }
         },
 
@@ -264,18 +329,24 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                 pens.forEach(pen => {
                     if (pen.closed) return;
 
-                    const gateX = pen.x + (pen.width - pen.gateWidth) / 2;
-                    const gateY = pen.y + pen.height;
+                    const gateX = pen.gateX;
+                    const gateY = pen.gateY;
+                    const gateW = pen.gateWidth;
 
-                    // Check if animal is at the gate
-                    if (animal.position.x >= gateX &&
-                        animal.position.x <= gateX + pen.gateWidth &&
-                        animal.position.y <= gateY + 10 &&
-                        animal.position.y >= pen.y + pen.height - 30) {
+                    // Check if animal is within the gate opening
+                    if (animal.position.x >= gateX - 10 &&
+                        animal.position.x <= gateX + gateW + 10 &&
+                        animal.position.y < gateY + 20) {
 
                         if (animal.type === pen.type) {
                             // Corral!
                             animal.state = JJ.AnimalState.Corralled;
+                            animal.velocity.x = 0;
+                            animal.velocity.y = 0;
+                            // Move animal inside the pen (random position within pen bounds)
+                            animal.position.x = pen.x + 40 + Math.random() * (pen.width - 80);
+                            animal.position.y = pen.y + 40 + Math.random() * (pen.height - 80);
+                            animal.animationState.currentAnimation = 'idle';
                             corralledCounts[animal.type]++;
 
                             // Points
@@ -297,7 +368,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                             const typeTotal = totalCounts[animal.type];
                             if (corralledCounts[animal.type] >= typeTotal) {
                                 pen.closed = true;
-                                JJ.Effects.spawnGateSlam({ x: gateX + pen.gateWidth / 2, y: gateY });
+                                JJ.Effects.spawnGateSlam({ x: gateX + gateW / 2, y: gateY });
                                 JJ.Audio.playSFX('gate_close');
                             }
 
@@ -329,29 +400,14 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                     animal.stuckPosition = { ...animal.position };
                 }
 
-                if (animal.stuckTimer >= 5 && now - animal.lastUnstuckTime >= 10) {
-                    // Nudge
+                if (animal.stuckTimer >= 10 && now - animal.lastUnstuckTime >= 10) {
+                    // Nudge in a random direction away from nearest boundary
                     const angle = Math.random() * Math.PI * 2;
                     animal.velocity.x = Math.cos(angle) * animal.baseSpeed * 0.5;
                     animal.velocity.y = Math.sin(angle) * animal.baseSpeed * 0.5;
                     animal.stuckTimer = 0;
                     animal.lastUnstuckTime = now;
-
-                    // If still stuck after 2s, teleport (handled next check cycle)
-                    setTimeout(() => {
-                        const dx2 = animal.position.x - animal.stuckPosition.x;
-                        const dy2 = animal.position.y - animal.stuckPosition.y;
-                        if (Math.sqrt(dx2 * dx2 + dy2 * dy2) < 10) {
-                            // Teleport to safe position
-                            const newX = 200 + Math.random() * (JJ.CANVAS_WIDTH - 400);
-                            const newY = 300 + Math.random() * (JJ.CANVAS_HEIGHT - 400);
-                            JJ.Effects.spawnTeleportPuff(animal.position);
-                            animal.position.x = newX;
-                            animal.position.y = newY;
-                            JJ.Effects.spawnTeleportPuff(animal.position);
-                            animal.stuckPosition = { ...animal.position };
-                        }
-                    }, 2000);
+                    animal.stuckPosition = { ...animal.position };
                 }
             });
         },
@@ -373,9 +429,18 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             }
         },
 
-        endLevel() {
+        endLevel(timedOut) {
             isComplete = true;
             const result = JJ.Levels.calculateScore(corralledCounts, totalCounts, elapsedTime, config.maxTime);
+            result.timedOut = timedOut || false;
+
+            // Audio
+            JJ.Audio.stopAll();
+            if (result.timedOut) {
+                JJ.Audio.playSFX('game_over');
+            } else {
+                JJ.Audio.playSFX('celebration');
+            }
 
             // Save progress
             if (levelNumber === 0) {
@@ -390,7 +455,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             JJ.Save.clearAutoSave();
 
             // Confetti for 3 stars
-            if (result.stars === 3) {
+            if (result.stars === 3 && !result.timedOut) {
                 JJ.Effects.spawnConfetti({ x: JJ.CANVAS_WIDTH / 2, y: JJ.CANVAS_HEIGHT / 2 });
             }
 
@@ -409,6 +474,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                 totalCounts,
                 jasper: JJ.Entities.getJasper(),
                 elapsedTime,
+                maxTime: config.maxTime,
                 score,
                 levelNumber,
                 remainingCounts: {
@@ -440,6 +506,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
 
         onPause() { isPaused = true; this.isPaused = true; },
         onResume() { isPaused = false; this.isPaused = false; },
+        onExit() { isComplete = true; },
     };
 };
 
@@ -570,9 +637,17 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
             ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
 
             // Title
-            const title = levelNumber === 0 ? 'Tutorial Complete!' :
-                          JJ.Levels.isLastLevel(levelNumber) ? 'Congratulations!' : 'Level Complete!';
-            ctx.fillStyle = '#f5a623';
+            let title;
+            if (levelNumber === 0) {
+                title = 'Tutorial Complete!';
+            } else if (result && result.timedOut) {
+                title = "Time's Up!";
+            } else if (JJ.Levels.isLastLevel(levelNumber)) {
+                title = 'Congratulations!';
+            } else {
+                title = 'Level Complete!';
+            }
+            ctx.fillStyle = (result && result.timedOut) ? '#e74c3c' : '#f5a623';
             ctx.font = 'bold 48px Georgia, serif';
             ctx.textAlign = 'center';
             ctx.fillText(title, JJ.CANVAS_WIDTH / 2, 200);

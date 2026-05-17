@@ -7,15 +7,18 @@
 
 JJ.Render = (function () {
     let bgCanvas = null; // Offscreen background
+    let bgImage = null; // Background image
+    let bgImageLoaded = false;
     let screenShakeX = 0;
     let screenShakeY = 0;
 
     function init(ctx) {
-        // Pre-render background to offscreen canvas
-        bgCanvas = document.createElement('canvas');
-        bgCanvas.width = JJ.CANVAS_WIDTH;
-        bgCanvas.height = JJ.CANVAS_HEIGHT;
-        drawBackground(bgCanvas.getContext('2d'));
+        // Load background image
+        bgImage = new Image();
+        bgImage.onload = function() {
+            bgImageLoaded = true;
+        };
+        bgImage.src = 'assets/jasper-junction-background.jpg';
     }
 
     function drawBackground(ctx) {
@@ -107,8 +110,11 @@ JJ.Render = (function () {
         }
 
         // Draw background
-        if (bgCanvas) {
-            ctx.drawImage(bgCanvas, 0, 0);
+        if (bgImageLoaded) {
+            ctx.drawImage(bgImage, 0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+        } else {
+            ctx.fillStyle = '#4a7c3f';
+            ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
         }
 
         // Draw pens
@@ -119,7 +125,6 @@ JJ.Render = (function () {
         // Draw entities sorted by Z-order
         if (gameState && gameState.entities) {
             const sorted = [...gameState.entities]
-                .filter(e => e.state !== JJ.AnimalState.Corralled)
                 .sort((a, b) => a.zOrder - b.zOrder || a.creationOrder - b.creationOrder);
 
             sorted.forEach(e => drawEntity(ctx, e));
@@ -130,61 +135,33 @@ JJ.Render = (function () {
 
     function drawPens(ctx, pens, gameState) {
         pens.forEach(pen => {
-            // Pen background
-            ctx.fillStyle = 'rgba(60, 40, 20, 0.4)';
-            ctx.strokeStyle = '#8B6914';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.rect(pen.x, pen.y, pen.width, pen.height);
-            ctx.fill();
-            ctx.stroke();
-
-            // Fence rails on pen
-            ctx.strokeStyle = '#6a5a4a';
-            ctx.lineWidth = 2;
-            // Top
-            ctx.beginPath();
-            ctx.moveTo(pen.x, pen.y + 5);
-            ctx.lineTo(pen.x + pen.width, pen.y + 5);
-            ctx.stroke();
-            // Sides
-            ctx.beginPath();
-            ctx.moveTo(pen.x + 2, pen.y);
-            ctx.lineTo(pen.x + 2, pen.y + pen.height);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(pen.x + pen.width - 2, pen.y);
-            ctx.lineTo(pen.x + pen.width - 2, pen.y + pen.height);
-            ctx.stroke();
+            // Pens are part of the background image - only draw gate state and labels
 
             // Gate
-            const gateX = pen.x + (pen.width - pen.gateWidth) / 2;
-            const gateY = pen.y + pen.height - 4;
+            const gateX = pen.gateX;
+            const gateY = pen.gateY;
+            const gateW = pen.gateWidth;
 
             if (pen.closed) {
-                ctx.fillStyle = '#5a3a1a';
-                ctx.fillRect(gateX, gateY - 10, pen.gateWidth, 14);
+                // Draw closed gate overlay
+                ctx.fillStyle = 'rgba(90, 58, 26, 0.8)';
+                ctx.fillRect(gateX, gateY - 8, gateW, 16);
                 ctx.strokeStyle = '#3a2a0a';
-                ctx.strokeRect(gateX, gateY - 10, pen.gateWidth, 14);
-            } else {
-                // Open gate markers
-                ctx.fillStyle = '#8B6914';
-                ctx.fillRect(gateX - 4, gateY - 12, 6, 16);
-                ctx.fillRect(gateX + pen.gateWidth - 2, gateY - 12, 6, 16);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(gateX, gateY - 8, gateW, 16);
             }
-
-            // Pen label
-            ctx.fillStyle = '#f0ece2';
-            ctx.font = 'bold 20px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(pen.label, pen.x + pen.width / 2, pen.y + 30);
 
             // Count of corralled animals
             const corralled = gameState.corralledCounts ? gameState.corralledCounts[pen.type] || 0 : 0;
             const total = gameState.totalCounts ? gameState.totalCounts[pen.type] || 0 : 0;
-            ctx.font = '16px sans-serif';
-            ctx.fillStyle = '#ccc';
-            ctx.fillText(corralled + '/' + total, pen.x + pen.width / 2, pen.y + 52);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.beginPath();
+            ctx.roundRect(pen.x + pen.width / 2 - 30, pen.y + pen.height - 30, 60, 24, 6);
+            ctx.fill();
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText(corralled + '/' + total, pen.x + pen.width / 2, pen.y + pen.height - 12);
         });
     }
 

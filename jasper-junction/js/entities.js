@@ -263,10 +263,32 @@ JJ.Entities = (function () {
         jasper.position.x += jasper.velocity.x * dt;
         jasper.position.y += jasper.velocity.y * dt;
 
-        // Boundary constraint
+        // Boundary constraint (use field rects, allow near gates)
         const r = jasper.collisionRadius;
-        jasper.position.x = Math.max(r, Math.min(JJ.CANVAS_WIDTH - r, jasper.position.x));
-        jasper.position.y = Math.max(r, Math.min(JJ.CANVAS_HEIGHT - r, jasper.position.y));
+        let allowGate = false;
+        let gateMinY = 0;
+        if (JJ.Levels) {
+            const pens = JJ.Levels.getPens();
+            for (const pen of pens) {
+                if (jasper.position.x >= pen.gateX - 25 &&
+                    jasper.position.x <= pen.gateX + pen.gateWidth + 25) {
+                    allowGate = true;
+                    gateMinY = pen.gateY - 30;
+                    break;
+                }
+            }
+        }
+
+        if (JJ.Levels && JJ.Levels.constrainToField) {
+            const constrained = JJ.Levels.constrainToField(jasper.position.x, jasper.position.y, r);
+            if (!allowGate || jasper.position.y > gateMinY + r + 5) {
+                jasper.position.x = constrained.x;
+                jasper.position.y = constrained.y;
+            } else {
+                jasper.position.x = constrained.x;
+                jasper.position.y = Math.max(gateMinY + r, jasper.position.y);
+            }
+        }
 
         // Dust trail
         if (Math.abs(jasper.velocity.x) > 10 || Math.abs(jasper.velocity.y) > 10) {
