@@ -739,19 +739,7 @@ JJ.Render = (function () {
     }
 
     function drawStateIndicator(ctx, entity) {
-        if (entity.type === JJ.EntityType.Goat) {
-            if (entity.state === JJ.AnimalState.Ignoring) {
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 14px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('💤', entity.position.x, entity.position.y - 30);
-            } else if (entity.state === JJ.AnimalState.Charging) {
-                ctx.fillStyle = '#ff4444';
-                ctx.font = 'bold 16px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('❗', entity.position.x, entity.position.y - 30);
-            }
-        }
+        // Removed - goat state indicators were too small to be useful
     }
 
     function setScreenShake(x, y) {

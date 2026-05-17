@@ -620,24 +620,38 @@ JJ.Scenes.Pause = function () {
 
 // === LEVEL END SCENE ===
 JJ.Scenes.LevelEnd = function (levelNumber, result) {
-    const buttons = [];
+    // Primary action button
+    let primaryLabel, primaryAction;
     if (levelNumber === 0) {
-        buttons.push({ label: 'Start Level 1!', action: 'next' });
+        primaryLabel = 'Start Level 1!';
+        primaryAction = 'next';
     } else if (JJ.Levels.isLastLevel(levelNumber)) {
-        buttons.push({ label: 'Victory! Back to Menu', action: 'menu' });
+        primaryLabel = 'Victory! Back to Menu';
+        primaryAction = 'menu';
     } else {
-        buttons.push({ label: 'Next Level', action: 'next' });
-        buttons.push({ label: 'Replay', action: 'replay' });
-        buttons.push({ label: 'Menu', action: 'menu' });
+        primaryLabel = 'Next Level';
+        primaryAction = 'next';
     }
 
-    function getButtonRect(i) {
-        const bw = 200, bh = 44;
-        const totalWidth = buttons.length * bw + (buttons.length - 1) * 20;
-        const startX = JJ.CANVAS_WIDTH / 2 - totalWidth / 2;
-        const x = startX + i * (bw + 20);
-        const y = 700;
+    // Secondary text links (only for non-tutorial, non-final levels)
+    const links = [];
+    if (levelNumber !== 0 && !JJ.Levels.isLastLevel(levelNumber)) {
+        links.push({ label: 'Replay This Level', action: 'replay' });
+        links.push({ label: 'Quit to Main Menu', action: 'menu' });
+    }
+
+    function getPrimaryButtonRect() {
+        const bw = 280, bh = 56;
+        const x = JJ.CANVAS_WIDTH / 2 - bw / 2;
+        const y = 660;
         return { x, y, w: bw, h: bh };
+    }
+
+    function getLinkRect(i) {
+        const lw = 220, lh = 30;
+        const x = JJ.CANVAS_WIDTH / 2 - lw / 2;
+        const y = 740 + i * 40;
+        return { x, y, w: lw, h: lh };
     }
 
     return {
@@ -706,20 +720,37 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
                 ctx.fillText('Total: ' + result.totalScore, JJ.CANVAS_WIDTH / 2, y + 20);
             }
 
-            // Buttons
-            buttons.forEach((btn, i) => {
-                const r = getButtonRect(i);
-                ctx.fillStyle = 'rgba(74, 124, 63, 0.9)';
-                ctx.beginPath();
-                ctx.roundRect(r.x, r.y, r.w, r.h, 8);
-                ctx.fill();
-                ctx.strokeStyle = '#8BC34A';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 18px sans-serif';
+            // Primary button (centered, prominent)
+            const pr = getPrimaryButtonRect();
+            ctx.fillStyle = 'rgba(74, 124, 63, 0.95)';
+            ctx.beginPath();
+            ctx.roundRect(pr.x, pr.y, pr.w, pr.h, 10);
+            ctx.fill();
+            ctx.strokeStyle = '#8BC34A';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(primaryLabel, pr.x + pr.w / 2, pr.y + pr.h / 2 + 8);
+
+            // Secondary text links
+            links.forEach((link, i) => {
+                const lr = getLinkRect(i);
+                ctx.fillStyle = '#aaa';
+                ctx.font = '18px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 6);
+                const textX = lr.x + lr.w / 2;
+                const textY = lr.y + lr.h / 2 + 6;
+                ctx.fillText(link.label, textX, textY);
+                // Underline
+                const textWidth = ctx.measureText(link.label).width;
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(textX - textWidth / 2, textY + 3);
+                ctx.lineTo(textX + textWidth / 2, textY + 3);
+                ctx.stroke();
             });
         },
     };
@@ -731,23 +762,35 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
         const cx = (clientX - rect.left) / scale;
         const cy = (clientY - rect.top) / scale;
 
-        buttons.forEach((btn, i) => {
-            const r = getButtonRect(i);
-            if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) {
-                switch (btn.action) {
-                    case 'next':
-                        const nextLevel = levelNumber === 0 ? 1 : levelNumber + 1;
-                        JJ.Engine.replaceScene(JJ.Scenes.Gameplay(nextLevel));
-                        break;
-                    case 'replay':
-                        JJ.Engine.replaceScene(JJ.Scenes.Gameplay(levelNumber));
-                        break;
-                    case 'menu':
-                        JJ.Engine.replaceScene(JJ.Scenes.MainMenu());
-                        break;
-                }
+        // Check primary button
+        const pr = getPrimaryButtonRect();
+        if (cx >= pr.x && cx <= pr.x + pr.w && cy >= pr.y && cy <= pr.y + pr.h) {
+            executeAction(primaryAction);
+            return;
+        }
+
+        // Check text links
+        links.forEach((link, i) => {
+            const lr = getLinkRect(i);
+            if (cx >= lr.x && cx <= lr.x + lr.w && cy >= lr.y && cy <= lr.y + lr.h) {
+                executeAction(link.action);
             }
         });
+    }
+
+    function executeAction(action) {
+        switch (action) {
+            case 'next':
+                const nextLevel = levelNumber === 0 ? 1 : levelNumber + 1;
+                JJ.Engine.replaceScene(JJ.Scenes.Gameplay(nextLevel));
+                break;
+            case 'replay':
+                JJ.Engine.replaceScene(JJ.Scenes.Gameplay(levelNumber));
+                break;
+            case 'menu':
+                JJ.Engine.replaceScene(JJ.Scenes.MainMenu());
+                break;
+        }
     }
 };
 
