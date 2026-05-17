@@ -19,6 +19,12 @@ JJ.Render = (function () {
             bgImageLoaded = true;
         };
         bgImage.src = 'assets/jasper-junction-background.jpg';
+
+        // Load custom Jasper sprites
+        initJasperSprites();
+
+        // Load custom animal sprites
+        initAnimalSprites();
     }
 
     function drawBackground(ctx) {
@@ -182,7 +188,73 @@ JJ.Render = (function () {
         drawStateIndicator(ctx, entity);
     }
 
+    // === Custom Jasper Sprites ===
+    let jasperSprites = {
+        stand: null,
+        run1: null,
+        run2: null,
+        loaded: false,
+        loadCount: 0,
+    };
+
+    function initJasperSprites() {
+        const onLoad = function () {
+            jasperSprites.loadCount++;
+            if (jasperSprites.loadCount >= 3) {
+                jasperSprites.loaded = true;
+            }
+        };
+
+        jasperSprites.stand = new Image();
+        jasperSprites.stand.onload = onLoad;
+        jasperSprites.stand.src = 'assets/jasper-stand.png';
+
+        jasperSprites.run1 = new Image();
+        jasperSprites.run1.onload = onLoad;
+        jasperSprites.run1.src = 'assets/jasper-run-1.png';
+
+        jasperSprites.run2 = new Image();
+        jasperSprites.run2.onload = onLoad;
+        jasperSprites.run2.src = 'assets/jasper-run-2.png';
+    }
+
     function drawJasper(ctx, entity) {
+        const anim = entity.animationState.currentAnimation;
+        const frame = entity.animationState.currentFrame % 2;
+
+        if (jasperSprites.loaded) {
+            // Draw custom sprite
+            let sprite;
+            if (anim === 'run' || anim === 'bark') {
+                sprite = frame === 0 ? jasperSprites.run1 : jasperSprites.run2;
+            } else {
+                sprite = jasperSprites.stand;
+            }
+
+            // Draw sprite centered on entity position
+            const drawW = 64;
+            const drawH = 48;
+            ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+
+            // Stun stars (still procedural overlay)
+            if (anim === 'stunned') {
+                const t = performance.now() * 0.005;
+                for (let i = 0; i < 3; i++) {
+                    const angle = t + (i * Math.PI * 2 / 3);
+                    const sx = Math.cos(angle) * 15;
+                    const sy = -18 + Math.sin(angle * 2) * 3;
+                    ctx.fillStyle = '#FFD700';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText('★', sx - 4, sy);
+                }
+            }
+        } else {
+            // Fallback: procedural drawing while sprites load
+            drawJasperProcedural(ctx, entity);
+        }
+    }
+
+    function drawJasperProcedural(ctx, entity) {
         const anim = entity.animationState.currentAnimation;
         const frame = entity.animationState.currentFrame % 2;
         const bo = anim === 'idle' ? Math.sin(performance.now() * 0.003) * 0.5 : 0;
@@ -374,7 +446,74 @@ JJ.Render = (function () {
         ctx.restore();
     }
 
+    // === Custom Animal Sprites ===
+    let animalSprites = {
+        sheep: { frame1: null, frame2: null, loaded: false, loadCount: 0 },
+        cow: { frame1: null, frame2: null, loaded: false, loadCount: 0 },
+        goat: { frame1: null, frame2: null, loaded: false, loadCount: 0 },
+    };
+
+    function initAnimalSprites() {
+        function loadPair(key, src1, src2) {
+            const onLoad = function () {
+                animalSprites[key].loadCount++;
+                if (animalSprites[key].loadCount >= 2) {
+                    animalSprites[key].loaded = true;
+                }
+            };
+            animalSprites[key].frame1 = new Image();
+            animalSprites[key].frame1.onload = onLoad;
+            animalSprites[key].frame1.src = src1;
+            animalSprites[key].frame2 = new Image();
+            animalSprites[key].frame2.onload = onLoad;
+            animalSprites[key].frame2.src = src2;
+        }
+
+        loadPair('sheep', 'assets/sheep-1.png', 'assets/sheep-2.png');
+        loadPair('cow', 'assets/cow-1.png', 'assets/cow-2.png');
+        loadPair('goat', 'assets/goat-1.png', 'assets/goat-2.png');
+    }
+
     function drawSheep(ctx, entity) {
+        const frame = entity.animationState.currentFrame % 2;
+
+        if (animalSprites.sheep.loaded) {
+            const sprite = frame === 0 ? animalSprites.sheep.frame1 : animalSprites.sheep.frame2;
+            const drawW = 48;
+            const drawH = 40;
+            ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+        } else {
+            drawSheepProcedural(ctx, entity);
+        }
+    }
+
+    function drawCow(ctx, entity) {
+        const frame = entity.animationState.currentFrame % 2;
+
+        if (animalSprites.cow.loaded) {
+            const sprite = frame === 0 ? animalSprites.cow.frame1 : animalSprites.cow.frame2;
+            const drawW = 56;
+            const drawH = 48;
+            ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+        } else {
+            drawCowProcedural(ctx, entity);
+        }
+    }
+
+    function drawGoat(ctx, entity) {
+        const frame = entity.animationState.currentFrame % 2;
+
+        if (animalSprites.goat.loaded) {
+            const sprite = frame === 0 ? animalSprites.goat.frame1 : animalSprites.goat.frame2;
+            const drawW = 44;
+            const drawH = 44;
+            ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+        } else {
+            drawGoatProcedural(ctx, entity);
+        }
+    }
+
+    function drawSheepProcedural(ctx, entity) {
         const frame = entity.animationState.currentFrame % 2;
         const bob = frame === 0 ? 0 : -1;
 
@@ -426,7 +565,7 @@ JJ.Render = (function () {
         ctx.fillRect(9 - legOff, 12, 3, 8);
     }
 
-    function drawCow(ctx, entity) {
+    function drawCowProcedural(ctx, entity) {
         const frame = entity.animationState.currentFrame % 2;
         const bob = frame === 0 ? 0 : -1;
 
@@ -507,7 +646,7 @@ JJ.Render = (function () {
         ctx.fillRect(10 - legOff, 20, 4, 3);
     }
 
-    function drawGoat(ctx, entity) {
+    function drawGoatProcedural(ctx, entity) {
         const frame = entity.animationState.currentFrame % 2;
         const bob = frame === 0 ? 0 : -2; // Goats bounce more
 

@@ -63,6 +63,7 @@ JJ.Audio = (function () {
 
     let musicSource = null;
     let ambientSource = null;
+    let levelCompleteSource = null;
     let duckTimer = null;
     let originalMusicVolume = 0.4;
 
@@ -235,6 +236,32 @@ JJ.Audio = (function () {
         activeSFX = [];
         if (musicSource) { try { musicSource.stop(); } catch (e) {} musicSource = null; }
         if (ambientSource) { try { ambientSource.stop(); } catch (e) {} ambientSource = null; }
+        if (levelCompleteSource) { try { levelCompleteSource.stop(); } catch (e) {} levelCompleteSource = null; }
+    }
+
+    function playLevelComplete() {
+        if (!initialized || !audioCtx) return;
+        if (muted.music) return;
+        if (levelCompleteSource) return; // Already playing
+
+        fetch('assets/level-complete.mp3')
+            .then(response => {
+                if (!response.ok) return null;
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => {
+                if (!arrayBuffer) return;
+                return audioCtx.decodeAudioData(arrayBuffer);
+            })
+            .then(buffer => {
+                if (!buffer || levelCompleteSource) return;
+                levelCompleteSource = audioCtx.createBufferSource();
+                levelCompleteSource.buffer = buffer;
+                levelCompleteSource.loop = true;
+                levelCompleteSource.connect(musicGain);
+                levelCompleteSource.start();
+            })
+            .catch(e => console.warn('Level complete music load failed:', e));
     }
 
     function fadeIn(duration) {
@@ -266,6 +293,7 @@ JJ.Audio = (function () {
         playSFX,
         playMusic,
         playAmbient,
+        playLevelComplete,
         stopAll,
         fadeIn,
         setVolume,

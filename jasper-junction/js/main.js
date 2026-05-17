@@ -27,6 +27,8 @@
         } else {
             overlay.style.display = 'none';
         }
+        // Re-check orientation (only enforced outside title screen)
+        if (JJ.Engine.checkOrientation) JJ.Engine.checkOrientation();
         requestAnimationFrame(updateOverlay);
     }
 

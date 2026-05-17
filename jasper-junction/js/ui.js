@@ -110,9 +110,9 @@ JJ.UI = (function () {
     }
 
     function drawBarkButton(ctx) {
-        const pos = JJ.Save ? JJ.Save.getBarkButtonPosition() : 'right';
-        const bx = pos === 'right' ? JJ.CANVAS_WIDTH - 15 : 165;
-        const by = JJ.CANVAS_HEIGHT - 145;
+        // Always lower-left, opposite from the HUD (lower-right)
+        const bx = 160;
+        const by = JJ.CANVAS_HEIGHT - 170;
         const radius = 40;
         const cooldown = JJ.Input.getBarkCooldownRemaining();
         const ready = cooldown <= 0;

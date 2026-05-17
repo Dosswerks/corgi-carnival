@@ -32,7 +32,7 @@ JJ.Scenes.MainMenu = function () {
     function getButtonRect(i) {
         const bw = 260, bh = 52;
         const x = JJ.CANVAS_WIDTH / 2 - bw / 2;
-        const y = 520 + i * 68;
+        const y = 440 + i * 68;
         return { x, y, w: bw, h: bh };
     }
 
@@ -102,16 +102,6 @@ JJ.Scenes.MainMenu = function () {
                 ctx.textAlign = 'center';
                 ctx.fillText('Jasper Junction', JJ.CANVAS_WIDTH / 2, 200);
             }
-
-            // Tagline
-            ctx.fillStyle = '#ccc';
-            ctx.font = '18px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Herd sheep, cows & goats on a Welsh hillside', JJ.CANVAS_WIDTH / 2, 450);
-
-            ctx.fillStyle = '#a8a4b8';
-            ctx.font = '16px sans-serif';
-            ctx.fillText('A Corgi Carnival Game', JJ.CANVAS_WIDTH / 2, 478);
 
             // Buttons with hover/active states
             buttons.forEach((btn, i) => {
@@ -655,10 +645,14 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
         onEnter() {
             JJ.Engine.getCanvas().addEventListener('click', this._onClick);
             JJ.Engine.getCanvas().addEventListener('touchend', this._onTouch);
+            // Play level complete music
+            if (JJ.Audio) JJ.Audio.playLevelComplete();
         },
         onExit() {
             JJ.Engine.getCanvas().removeEventListener('click', this._onClick);
             JJ.Engine.getCanvas().removeEventListener('touchend', this._onTouch);
+            // Stop level complete music when leaving
+            if (JJ.Audio) JJ.Audio.stopAll();
         },
         _onClick(e) { handleEndClick(e.clientX, e.clientY); },
         _onTouch(e) {

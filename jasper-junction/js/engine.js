@@ -91,7 +91,11 @@ JJ.Engine = (function () {
         const isPortrait = window.innerHeight > window.innerWidth * 1.2; // More lenient ratio
         const isMobile = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth < 1024;
 
-        if (isMobile && isPortrait) {
+        // Only require landscape when NOT on the title screen
+        const scene = currentScene();
+        const isOnTitleScreen = !scene || scene.name === 'mainmenu';
+
+        if (isMobile && isPortrait && !isOnTitleScreen) {
             prompt.style.display = 'flex';
             pauseGame();
         } else {
@@ -224,5 +228,6 @@ JJ.Engine = (function () {
         getCanvas,
         getCtx,
         isPaused,
+        checkOrientation,
     };
 })();
