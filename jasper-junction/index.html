@@ -50,6 +50,29 @@
         #orientation-prompt .rotate-icon {
             font-size: 3rem;
         }
+        /* On mobile landscape, shrink the title footer to avoid covering game buttons */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #title-footer {
+                padding: 6px 12px !important;
+            }
+            #title-footer p {
+                font-size: 11px !important;
+                margin-bottom: 2px !important;
+            }
+            #title-footer form button svg {
+                width: 36px !important;
+                height: 45px !important;
+            }
+            #qr-code {
+                display: none !important;
+            }
+        }
+        /* On very short screens, hide footer entirely to prevent overlap */
+        @media (max-height: 380px) {
+            #title-footer {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
