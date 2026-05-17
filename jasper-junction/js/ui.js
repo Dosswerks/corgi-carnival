@@ -12,8 +12,8 @@ JJ.UI = (function () {
         ctx.save();
 
         // === HUD in lower-right corner ===
-        const hudX = JJ.CANVAS_WIDTH - 300;
-        const hudY = 750;
+        const hudX = JJ.CANVAS_WIDTH - 390;
+        const hudY = 680;
 
         // Timer (countdown)
         const remaining = Math.max(0, (gameState.maxTime || 120) - gameState.elapsedTime);
@@ -106,64 +106,60 @@ JJ.UI = (function () {
     }
 
     function drawBarkIndicator(ctx, gameState) {
-        if (!gameState.jasper) return;
-        const jasper = gameState.jasper;
-        const cooldown = JJ.Input.getBarkCooldownRemaining();
-        const ready = cooldown <= 0;
-
-        const ix = jasper.position.x + 30;
-        const iy = jasper.position.y - 30;
-
-        // Cooldown circle
-        ctx.beginPath();
-        ctx.arc(ix, iy, 12, 0, Math.PI * 2);
-        ctx.fillStyle = ready ? 'rgba(245, 166, 35, 0.8)' : 'rgba(100, 100, 100, 0.6)';
-        ctx.fill();
-
-        if (!ready) {
-            // Draw cooldown arc
-            const progress = 1 - (cooldown / JJ.Input.BARK_COOLDOWN);
-            ctx.beginPath();
-            ctx.moveTo(ix, iy);
-            ctx.arc(ix, iy, 12, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(245, 166, 35, 0.6)';
-            ctx.fill();
-        } else {
-            // Ready pulse
-            const pulse = Math.sin(performance.now() * 0.005) * 0.3 + 0.7;
-            ctx.beginPath();
-            ctx.arc(ix, iy, 14, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(245, 166, 35, ${pulse})`;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-
-        // Bark icon
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🔊', ix, iy + 4);
+        // Removed - cooldown now shown on the bark button itself
     }
 
     function drawBarkButton(ctx) {
         const pos = JJ.Save ? JJ.Save.getBarkButtonPosition() : 'right';
-        const bx = pos === 'right' ? JJ.CANVAS_WIDTH - 70 : 70;
-        const by = JJ.CANVAS_HEIGHT - 70;
-        const ready = JJ.Input.isBarkReady();
+        const bx = pos === 'right' ? JJ.CANVAS_WIDTH - 15 : 165;
+        const by = JJ.CANVAS_HEIGHT - 145;
+        const radius = 40;
+        const cooldown = JJ.Input.getBarkCooldownRemaining();
+        const ready = cooldown <= 0;
+        const progress = ready ? 1 : 1 - (cooldown / JJ.Input.BARK_COOLDOWN);
 
+        // Background circle (dark when cooling down)
         ctx.beginPath();
-        ctx.arc(bx, by, 30, 0, Math.PI * 2);
-        ctx.fillStyle = ready ? 'rgba(245, 166, 35, 0.8)' : 'rgba(100, 100, 100, 0.5)';
+        ctx.arc(bx, by, radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(60, 60, 60, 0.7)';
         ctx.fill();
+
+        // Fill-up arc showing cooldown progress
+        if (!ready) {
+            ctx.beginPath();
+            ctx.moveTo(bx, by);
+            ctx.arc(bx, by, radius, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(245, 166, 35, 0.6)';
+            ctx.fill();
+        } else {
+            // Full circle when ready
+            ctx.beginPath();
+            ctx.arc(bx, by, radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(245, 166, 35, 0.8)';
+            ctx.fill();
+
+            // Pulse glow when ready
+            const pulse = Math.sin(performance.now() * 0.005) * 0.3 + 0.7;
+            ctx.beginPath();
+            ctx.arc(bx, by, radius + 4, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(245, 166, 35, ${pulse})`;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        // Border
+        ctx.beginPath();
+        ctx.arc(bx, by, radius, 0, Math.PI * 2);
         ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.stroke();
 
+        // Label
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px sans-serif';
+        ctx.font = 'bold 18px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('BARK', bx, by + 5);
+        ctx.fillText('BARK', bx, by + 6);
     }
 
     function drawPauseButton(ctx) {

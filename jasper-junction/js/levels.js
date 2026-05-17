@@ -10,7 +10,7 @@ JJ.Levels = (function () {
     const LEVEL_CONFIGS = [
         { // Level 1
             levelNumber: 1,
-            sheepCount: 10, cowCount: 10, goatCount: 10,
+            sheepCount: 3, cowCount: 3, goatCount: 3,
             speedMultiplier: 1.0,
             maxTime: 120,
             behaviorModifiers: {
@@ -23,7 +23,7 @@ JJ.Levels = (function () {
         },
         { // Level 2
             levelNumber: 2,
-            sheepCount: 12, cowCount: 12, goatCount: 12,
+            sheepCount: 5, cowCount: 5, goatCount: 5,
             speedMultiplier: 1.05,
             maxTime: 120,
             behaviorModifiers: {
@@ -36,7 +36,7 @@ JJ.Levels = (function () {
         },
         { // Level 3
             levelNumber: 3,
-            sheepCount: 14, cowCount: 14, goatCount: 14,
+            sheepCount: 7, cowCount: 7, goatCount: 7,
             speedMultiplier: 1.10,
             maxTime: 130,
             behaviorModifiers: {
@@ -49,7 +49,7 @@ JJ.Levels = (function () {
         },
         { // Level 4
             levelNumber: 4,
-            sheepCount: 16, cowCount: 16, goatCount: 16,
+            sheepCount: 10, cowCount: 10, goatCount: 10,
             speedMultiplier: 1.15,
             maxTime: 140,
             behaviorModifiers: {
@@ -62,7 +62,7 @@ JJ.Levels = (function () {
         },
         { // Level 5
             levelNumber: 5,
-            sheepCount: 18, cowCount: 18, goatCount: 18,
+            sheepCount: 14, cowCount: 14, goatCount: 14,
             speedMultiplier: 1.20,
             maxTime: 150,
             behaviorModifiers: {

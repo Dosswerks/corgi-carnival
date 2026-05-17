@@ -141,13 +141,7 @@ JJ.Scenes.MainMenu = function () {
                 ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 7);
             });
 
-            // Footer
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(0, JJ.CANVAS_HEIGHT - 50, JJ.CANVAS_WIDTH, 50);
-            ctx.fillStyle = '#888';
-            ctx.font = '13px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('© 2026 Andrew Doss • Corgi Carnival', JJ.CANVAS_WIDTH / 2, JJ.CANVAS_HEIGHT - 20);
+            // Footer handled by HTML overlay (#title-overlay)
         },
     };
 
@@ -297,6 +291,30 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             // Update entities
             JJ.Entities.update(dt);
 
+            // Slide corralled animals toward their pen target
+            JJ.Entities.getAllEntities().forEach(animal => {
+                if (animal.state !== JJ.AnimalState.Corralled) return;
+                if (!animal.corralTarget) return;
+
+                const dx = animal.corralTarget.x - animal.position.x;
+                const dy = animal.corralTarget.y - animal.position.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 3) {
+                    const speed = 80; // Slide speed
+                    animal.position.x += (dx / dist) * speed * dt;
+                    animal.position.y += (dy / dist) * speed * dt;
+                } else {
+                    // Arrived at target
+                    animal.position.x = animal.corralTarget.x;
+                    animal.position.y = animal.corralTarget.y;
+                    animal.corralTarget = null;
+                    animal.velocity.x = 0;
+                    animal.velocity.y = 0;
+                    animal.animationState.currentAnimation = 'idle';
+                }
+            });
+
             // AI
             const animals = JJ.Entities.getUncorralledAnimals();
             const jasper = JJ.Entities.getJasper();
@@ -316,10 +334,16 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                 this.updateTutorial();
             }
 
-            // Check win condition
+            // Check win condition - only if all animals are corralled AND finished sliding
             const remaining = JJ.Entities.getUncorralledAnimals().length;
             if (remaining === 0 && !isComplete) {
-                this.endLevel(false); // completed
+                // Check if all corralled animals have reached their target
+                const stillSliding = JJ.Entities.getAllEntities().some(
+                    a => a.state === JJ.AnimalState.Corralled && a.corralTarget
+                );
+                if (!stillSliding) {
+                    this.endLevel(false); // completed
+                }
             }
         },
 
@@ -341,12 +365,12 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                         if (animal.type === pen.type) {
                             // Corral!
                             animal.state = JJ.AnimalState.Corralled;
-                            animal.velocity.x = 0;
-                            animal.velocity.y = 0;
-                            // Move animal inside the pen (random position within pen bounds)
-                            animal.position.x = pen.x + 40 + Math.random() * (pen.width - 80);
-                            animal.position.y = pen.y + 40 + Math.random() * (pen.height - 80);
-                            animal.animationState.currentAnimation = 'idle';
+                            // Set a target position inside the pen and slide toward it
+                            animal.corralTarget = {
+                                x: pen.x + 60 + Math.random() * (pen.width - 120),
+                                y: pen.y + 30 + Math.random() * (pen.height - 100),
+                            };
+                            animal.animationState.currentAnimation = 'run';
                             corralledCounts[animal.type]++;
 
                             // Points
@@ -367,9 +391,16 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                             // Check if pen should close
                             const typeTotal = totalCounts[animal.type];
                             if (corralledCounts[animal.type] >= typeTotal) {
-                                pen.closed = true;
-                                JJ.Effects.spawnGateSlam({ x: gateX + gateW / 2, y: gateY });
-                                JJ.Audio.playSFX('gate_close');
+                                // Delay gate close to let the last animal slide in
+                                const closePen = pen;
+                                const closeGateX = gateX;
+                                const closeGateW = gateW;
+                                const closeGateY = gateY;
+                                setTimeout(() => {
+                                    closePen.closed = true;
+                                    JJ.Effects.spawnGateSlam({ x: closeGateX + closeGateW / 2, y: closeGateY });
+                                    JJ.Audio.playSFX('gate_close');
+                                }, 500);
                             }
 
                             // Tutorial tracking
@@ -623,14 +654,19 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
         name: 'levelend',
         onEnter() {
             JJ.Engine.getCanvas().addEventListener('click', this._onClick);
-            JJ.Engine.getCanvas().addEventListener('touchstart', this._onTouch);
+            JJ.Engine.getCanvas().addEventListener('touchend', this._onTouch);
         },
         onExit() {
             JJ.Engine.getCanvas().removeEventListener('click', this._onClick);
-            JJ.Engine.getCanvas().removeEventListener('touchstart', this._onTouch);
+            JJ.Engine.getCanvas().removeEventListener('touchend', this._onTouch);
         },
         _onClick(e) { handleEndClick(e.clientX, e.clientY); },
-        _onTouch(e) { e.preventDefault(); handleEndClick(e.touches[0].clientX, e.touches[0].clientY); },
+        _onTouch(e) {
+            e.preventDefault();
+            if (e.changedTouches && e.changedTouches[0]) {
+                handleEndClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            }
+        },
         update(dt) {},
         render(ctx) {
             ctx.fillStyle = '#1a2a1a';

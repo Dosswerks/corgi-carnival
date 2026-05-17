@@ -85,11 +85,11 @@ JJ.Input = (function () {
 
     // Touch handlers
     function onTouchStart(e) {
-        e.preventDefault();
         // Only process input during gameplay
         const scene = JJ.Engine.currentScene();
-        if (scene && scene.name !== 'gameplay') return;
+        if (!scene || scene.name !== 'gameplay') return;
 
+        e.preventDefault();
         const touch = e.touches[0];
         const pos = deviceToCanonical(touch.clientX, touch.clientY);
 
@@ -104,11 +104,11 @@ JJ.Input = (function () {
     }
 
     function onTouchMove(e) {
-        e.preventDefault();
         if (!state.isActive) return;
         const scene = JJ.Engine.currentScene();
-        if (scene && scene.name !== 'gameplay') return;
+        if (!scene || scene.name !== 'gameplay') return;
 
+        e.preventDefault();
         const touch = e.touches[0];
         const pos = deviceToCanonical(touch.clientX, touch.clientY);
 

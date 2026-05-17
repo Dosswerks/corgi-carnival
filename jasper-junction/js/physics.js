@@ -58,9 +58,10 @@ JJ.Physics = (function () {
     }
 
     function update(dt, entities) {
-        // Apply velocity to animals
+        // Apply velocity to animals (skip corralled)
         entities.forEach(e => {
             if (e.type === JJ.EntityType.Jasper) return; // Jasper handled in entities.js
+            if (e.state === JJ.AnimalState.Corralled) return; // Skip corralled
 
             // Anti-jitter: snap if movement too small
             const moveMag = Math.sqrt(e.velocity.x * e.velocity.x + e.velocity.y * e.velocity.y) * dt;
@@ -74,20 +75,23 @@ JJ.Physics = (function () {
             e.position.y += e.velocity.y * dt;
         });
 
+        // Filter out corralled animals for physics processing
+        const activeEntities = entities.filter(e => e.state !== JJ.AnimalState.Corralled);
+
         // Rebuild spatial grid
-        rebuildGrid(entities);
+        rebuildGrid(activeEntities);
 
         // Local avoidance
-        applyLocalAvoidance(entities, dt);
+        applyLocalAvoidance(activeEntities, dt);
 
         // Resolve collisions
-        resolveCollisions(entities);
+        resolveCollisions(activeEntities);
 
         // Boundary constraints
-        entities.forEach(e => constrainToBounds(e));
+        activeEntities.forEach(e => constrainToBounds(e));
 
         // Corner escape
-        entities.forEach(e => applyCornerEscape(e, dt));
+        activeEntities.forEach(e => applyCornerEscape(e, dt));
     }
 
     function applyLocalAvoidance(entities, dt) {
@@ -102,6 +106,7 @@ JJ.Physics = (function () {
             nearby.forEach(other => {
                 if (other.id === e.id) return;
                 if (other.type === JJ.EntityType.Jasper) return;
+                if (other.state === JJ.AnimalState.Corralled) return;
                 if (count >= 3) return;
 
                 const dx = e.position.x - other.position.x;
@@ -146,18 +151,21 @@ JJ.Physics = (function () {
                         const nx = dx / dist;
                         const ny = dy / dist;
 
-                        // Push apart equally (unless one is Jasper, who doesn't get pushed by animals)
+                        // Limit push to avoid large teleport-like jumps
+                        const maxPush = 3;
+                        const pushAmount = Math.min(overlap, maxPush);
+
                         if (a.type === JJ.EntityType.Jasper) {
-                            b.position.x += nx * overlap * 2;
-                            b.position.y += ny * overlap * 2;
+                            b.position.x += nx * pushAmount * 2;
+                            b.position.y += ny * pushAmount * 2;
                         } else if (b.type === JJ.EntityType.Jasper) {
-                            a.position.x -= nx * overlap * 2;
-                            a.position.y -= ny * overlap * 2;
+                            a.position.x -= nx * pushAmount * 2;
+                            a.position.y -= ny * pushAmount * 2;
                         } else {
-                            a.position.x -= nx * overlap;
-                            a.position.y -= ny * overlap;
-                            b.position.x += nx * overlap;
-                            b.position.y += ny * overlap;
+                            a.position.x -= nx * pushAmount;
+                            a.position.y -= ny * pushAmount;
+                            b.position.x += nx * pushAmount;
+                            b.position.y += ny * pushAmount;
                         }
                     }
                 }
@@ -177,10 +185,10 @@ JJ.Physics = (function () {
             const pens = JJ.Levels.getPens();
             const fieldTop = 251; // top of upper field rect
             for (const pen of pens) {
-                if (entity.position.x >= pen.gateX - 25 &&
-                    entity.position.x <= pen.gateX + pen.gateWidth + 25 &&
+                // Only allow through the actual gate opening, not the whole pen
+                if (entity.position.x >= pen.gateX &&
+                    entity.position.x <= pen.gateX + pen.gateWidth &&
                     entity.position.y < fieldTop + 50) {
-                    // Animal is near the top of the field and aligned with gate
                     allowGate = true;
                     gateMinY = pen.gateY - 30;
                     break;
@@ -202,27 +210,20 @@ JJ.Physics = (function () {
                 // Only constrain X, let Y pass through to gate
                 if (entity.type !== JJ.EntityType.Jasper && constrained.x !== entity.position.x) {
                     entity.velocity.x = 0;
-                    if (entity.velocity.y === 0) {
-                        entity.velocity.y = (Math.random() > 0.5 ? 1 : -1) * entity.baseSpeed * 0.5;
-                    }
                 }
                 entity.position.x = constrained.x;
             } else {
                 if (entity.type !== JJ.EntityType.Jasper) {
-                    // Hit horizontal boundary - redirect along wall
+                    // Hit boundary - stop velocity in that direction and dampen
                     if (constrained.x !== entity.position.x) {
                         entity.velocity.x = 0;
-                        if (entity.velocity.y === 0) {
-                            entity.velocity.y = (Math.random() > 0.5 ? 1 : -1) * entity.baseSpeed * 0.5;
-                        }
                     }
-                    // Hit vertical boundary - redirect along wall
                     if (constrained.y !== entity.position.y) {
                         entity.velocity.y = 0;
-                        if (entity.velocity.x === 0) {
-                            entity.velocity.x = (Math.random() > 0.5 ? 1 : -1) * entity.baseSpeed * 0.5;
-                        }
                     }
+                    // General damping near boundaries to prevent jitter
+                    entity.velocity.x *= 0.9;
+                    entity.velocity.y *= 0.9;
                 }
                 entity.position.x = constrained.x;
                 entity.position.y = constrained.y;

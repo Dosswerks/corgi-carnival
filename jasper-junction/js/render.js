@@ -135,7 +135,7 @@ JJ.Render = (function () {
 
     function drawPens(ctx, pens, gameState) {
         pens.forEach(pen => {
-            // Pens are part of the background image - only draw gate state and labels
+            // Pens are part of the background image - only draw gate state
 
             // Gate
             const gateX = pen.gateX;
@@ -150,18 +150,6 @@ JJ.Render = (function () {
                 ctx.lineWidth = 2;
                 ctx.strokeRect(gateX, gateY - 8, gateW, 16);
             }
-
-            // Count of corralled animals
-            const corralled = gameState.corralledCounts ? gameState.corralledCounts[pen.type] || 0 : 0;
-            const total = gameState.totalCounts ? gameState.totalCounts[pen.type] || 0 : 0;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.beginPath();
-            ctx.roundRect(pen.x + pen.width / 2 - 30, pen.y + pen.height - 30, 60, 24, 6);
-            ctx.fill();
-            ctx.font = 'bold 16px sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
-            ctx.fillText(corralled + '/' + total, pen.x + pen.width / 2, pen.y + pen.height - 12);
         });
     }
 

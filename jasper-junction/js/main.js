@@ -6,6 +6,30 @@
 'use strict';
 
 (function () {
+    // Generate QR code
+    function initQR() {
+        if (typeof qrcode !== 'undefined') {
+            var qr = qrcode(0, 'L');
+            qr.addData('https://www.paypal.com/donate/?hosted_button_id=HDD77QKGC6XXN');
+            qr.make();
+            var el = document.getElementById('qr-code');
+            if (el) el.innerHTML = qr.createSvgTag({ cellSize: 2, margin: 0 });
+        }
+    }
+
+    // Show/hide title overlay based on scene
+    function updateOverlay() {
+        const overlay = document.getElementById('title-overlay');
+        if (!overlay) return;
+        const scene = JJ.Engine.currentScene();
+        if (scene && scene.name === 'mainmenu') {
+            overlay.style.display = 'block';
+        } else {
+            overlay.style.display = 'none';
+        }
+        requestAnimationFrame(updateOverlay);
+    }
+
     // Wait for DOM
     function boot() {
         // Initialize engine
@@ -23,6 +47,12 @@
 
         // Start the game loop
         JJ.Engine.start();
+
+        // Init QR code
+        initQR();
+
+        // Start overlay watcher
+        updateOverlay();
     }
 
     if (document.readyState === 'loading') {
