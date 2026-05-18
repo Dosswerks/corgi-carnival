@@ -40,7 +40,7 @@ function createEntity(type, x, y, width, height) {
             currentAnimation: 'idle',
             currentFrame: 0,
             frameTimer: 0,
-            frameRate: 12,
+            frameRate: 6,
         },
         zOrder: 0,
         creationOrder: entityIdCounter,
@@ -48,7 +48,7 @@ function createEntity(type, x, y, width, height) {
 }
 
 function createJasper(x, y) {
-    const e = createEntity(JJ.EntityType.Jasper, x, y, 64, 48);
+    const e = createEntity(JJ.EntityType.Jasper, x, y, 96, 72);
     e.baseSpeed = 150;
     e.herdRadius = 120;
     e.isBarkActive = false;
@@ -66,18 +66,18 @@ function createAnimal(type, x, y) {
 
     switch (type) {
         case JJ.EntityType.Sheep:
-            width = 48; height = 40;
-            baseSpeed = 60; // 40% of Jasper's 150
-            herdRadius = 180; // 1.5x base
+            width = 100; height = 80;
+            baseSpeed = 60;
+            herdRadius = 180;
             break;
         case JJ.EntityType.Cow:
-            width = 56; height = 48;
-            baseSpeed = 60; // flee speed; wander is 30
+            width = 128; height = 96;
+            baseSpeed = 60;
             herdRadius = 120;
             break;
         case JJ.EntityType.Goat:
-            width = 44; height = 44;
-            baseSpeed = 90; // fast
+            width = 104; height = 88;
+            baseSpeed = 90;
             herdRadius = 120;
             break;
     }
@@ -270,10 +270,10 @@ JJ.Entities = (function () {
         if (JJ.Levels) {
             const pens = JJ.Levels.getPens();
             for (const pen of pens) {
-                if (jasper.position.x >= pen.gateX - 25 &&
-                    jasper.position.x <= pen.gateX + pen.gateWidth + 25) {
+                if (jasper.position.x >= pen.gateX - 30 &&
+                    jasper.position.x <= pen.gateX + pen.gateWidth + 30) {
                     allowGate = true;
-                    gateMinY = pen.gateY - 30;
+                    gateMinY = pen.gateY - 40;
                     break;
                 }
             }
@@ -293,7 +293,9 @@ JJ.Entities = (function () {
         // Dust trail
         if (Math.abs(jasper.velocity.x) > 10 || Math.abs(jasper.velocity.y) > 10) {
             if (JJ.Effects && Math.random() < 0.3) {
-                JJ.Effects.spawnDustTrail(jasper.position);
+                // Spawn behind Jasper (opposite of facing direction) at feet level
+                const behindOffset = jasper.facing === 'right' ? -22 : 22;
+                JJ.Effects.spawnDustTrail({ x: jasper.position.x + behindOffset, y: jasper.position.y + 26 });
             }
         }
     }

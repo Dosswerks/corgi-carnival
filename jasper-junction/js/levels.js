@@ -104,26 +104,28 @@ JJ.Levels = (function () {
     };
 
     // Pen definitions - matched to background image zones
+    // Gate positions measured from background image in Photoshop
     const PENS = [
-        { type: JJ.EntityType.Sheep, label: 'Sheep', x: 182, y: 34, width: 357, height: 197, gateX: 289, gateY: 233, gateWidth: 131, closed: false },
-        { type: JJ.EntityType.Cow, label: 'Cows', x: 635, y: 31, width: 394, height: 198, gateX: 724, gateY: 237, gateWidth: 181, closed: false },
-        { type: JJ.EntityType.Goat, label: 'Goats', x: 1127, y: 31, width: 379, height: 196, gateX: 1224, gateY: 232, gateWidth: 178, closed: false },
+        { type: JJ.EntityType.Sheep, label: 'Sheep', x: 182, y: 34, width: 357, height: 197, gateX: 292, gateY: 231, gateWidth: 126, closed: false },
+        { type: JJ.EntityType.Cow, label: 'Cows', x: 635, y: 31, width: 394, height: 198, gateX: 724, gateY: 231, gateWidth: 179, closed: false },
+        { type: JJ.EntityType.Goat, label: 'Goats', x: 1127, y: 31, width: 379, height: 196, gateX: 1227, gateY: 231, gateWidth: 172, closed: false },
     ];
 
     // Play field bounds (where animals can roam) - multiple rectangles
+    // Reduced lower extent to keep entities away from HUD (y:680) and BARK button (y:769)
     const FIELD_RECTS = [
-        { x: 174, y: 251, width: 1325, height: 323 },   // Main upper field (y: 251-574)
-        { x: 132, y: 540, width: 1181, height: 192 },   // Lower field (overlaps upper by 34px)
-        { x: 1482, y: 420, width: 55, height: 150 },    // Right extension
-        { x: 140, y: 350, width: 50, height: 224 },     // Left edge taper
+        { x: 174, y: 265, width: 1325, height: 289 },   // Main upper field (y: 265-554) - buffer below pen walls
+        { x: 132, y: 520, width: 1181, height: 130 },   // Lower field (y: 520-650) - stops well above HUD
+        { x: 1482, y: 420, width: 55, height: 130 },    // Right extension (capped at 550)
+        { x: 140, y: 350, width: 50, height: 200 },     // Left edge taper (capped at 550)
     ];
 
     // Combined bounding box (used for simple checks)
     const FIELD_BOUNDS = {
         x: 132,
-        y: 251,
+        y: 265,
         width: 1405,
-        height: 481, // y: 251 to 732
+        height: 385, // y: 265 to 650
     };
 
     function isInField(x, y, radius) {

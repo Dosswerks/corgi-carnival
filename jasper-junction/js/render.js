@@ -141,20 +141,19 @@ JJ.Render = (function () {
 
     function drawPens(ctx, pens, gameState) {
         pens.forEach(pen => {
-            // Pens are part of the background image - only draw gate state
-
             // Gate
             const gateX = pen.gateX;
             const gateY = pen.gateY;
             const gateW = pen.gateWidth;
 
             if (pen.closed) {
-                // Draw closed gate overlay
-                ctx.fillStyle = 'rgba(90, 58, 26, 0.8)';
-                ctx.fillRect(gateX, gateY - 8, gateW, 16);
-                ctx.strokeStyle = '#3a2a0a';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(gateX, gateY - 8, gateW, 16);
+                // Thick gold line
+                ctx.strokeStyle = '#c8a415';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(gateX, gateY);
+                ctx.lineTo(gateX + gateW, gateY);
+                ctx.stroke();
             }
         });
     }
@@ -163,7 +162,7 @@ JJ.Render = (function () {
         ctx.save();
         ctx.translate(entity.position.x, entity.position.y);
 
-        if (entity.facing === 'right') {
+        if (entity.facing === 'left') {
             ctx.scale(-1, 1);
         }
 
@@ -223,7 +222,7 @@ JJ.Render = (function () {
         const frame = entity.animationState.currentFrame % 2;
 
         if (jasperSprites.loaded) {
-            // Draw custom sprite
+            // Draw custom sprite at 1.5x size
             let sprite;
             if (anim === 'run' || anim === 'bark') {
                 sprite = frame === 0 ? jasperSprites.run1 : jasperSprites.run2;
@@ -232,8 +231,8 @@ JJ.Render = (function () {
             }
 
             // Draw sprite centered on entity position
-            const drawW = 64;
-            const drawH = 48;
+            const drawW = 96;
+            const drawH = 72;
             ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
 
             // Stun stars (still procedural overlay)
@@ -479,8 +478,8 @@ JJ.Render = (function () {
 
         if (animalSprites.sheep.loaded) {
             const sprite = frame === 0 ? animalSprites.sheep.frame1 : animalSprites.sheep.frame2;
-            const drawW = 48;
-            const drawH = 40;
+            const drawW = 100;
+            const drawH = 80;
             ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
         } else {
             drawSheepProcedural(ctx, entity);
@@ -492,8 +491,8 @@ JJ.Render = (function () {
 
         if (animalSprites.cow.loaded) {
             const sprite = frame === 0 ? animalSprites.cow.frame1 : animalSprites.cow.frame2;
-            const drawW = 56;
-            const drawH = 48;
+            const drawW = 128;
+            const drawH = 96;
             ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
         } else {
             drawCowProcedural(ctx, entity);
@@ -505,8 +504,8 @@ JJ.Render = (function () {
 
         if (animalSprites.goat.loaded) {
             const sprite = frame === 0 ? animalSprites.goat.frame1 : animalSprites.goat.frame2;
-            const drawW = 44;
-            const drawH = 44;
+            const drawW = 104;
+            const drawH = 88;
             ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
         } else {
             drawGoatProcedural(ctx, entity);

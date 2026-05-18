@@ -15,11 +15,14 @@ JJ.UI = (function () {
         const hudX = JJ.CANVAS_WIDTH - 390;
         const hudY = 680;
 
-        // Timer (countdown)
+        // Timer (countdown) - hide for tutorial (infinite time)
         const remaining = Math.max(0, (gameState.maxTime || 120) - gameState.elapsedTime);
-        const minutes = Math.floor(remaining / 60);
-        const seconds = Math.floor(remaining % 60);
-        const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        let timeStr = '';
+        if (isFinite(remaining)) {
+            const minutes = Math.floor(remaining / 60);
+            const seconds = Math.floor(remaining % 60);
+            timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        }
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.beginPath();
@@ -34,10 +37,12 @@ JJ.UI = (function () {
         ctx.fillText(levelText, hudX + 12, hudY + 24);
 
         // Timer
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 22px monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(timeStr, hudX + 268, hudY + 24);
+        if (timeStr) {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 22px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(timeStr, hudX + 268, hudY + 24);
+        }
 
         // Animal counts
         const counts = gameState.remainingCounts || { sheep: 0, cow: 0, goat: 0 };

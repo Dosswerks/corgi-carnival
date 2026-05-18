@@ -72,7 +72,9 @@ JJ.Audio = (function () {
         tryCreateContext();
 
         // Also try on any user interaction (for browsers that block without gesture)
+        // iOS Safari specifically needs touchend for reliable audio unlock
         document.addEventListener('touchstart', tryCreateContext);
+        document.addEventListener('touchend', tryCreateContext);
         document.addEventListener('mousedown', tryCreateContext);
         document.addEventListener('keydown', tryCreateContext);
     }
@@ -85,35 +87,22 @@ JJ.Audio = (function () {
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-            // Resume if suspended (Safari/Chrome autoplay policy)
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            // Resume if suspended (iOS Safari / Chrome autoplay policy)
+            // Must await the promise for iOS to actually unlock audio
+            const resumePromise = audioCtx.resume();
+            if (resumePromise && resumePromise.then) {
+                resumePromise.then(() => {
+                    finishInit();
+                }).catch(e => {
+                    console.warn('AudioContext resume failed:', e);
+                });
+            } else {
+                finishInit();
             }
 
-            masterGain = audioCtx.createGain();
-            masterGain.connect(audioCtx.destination);
-
-            musicGain = audioCtx.createGain();
-            musicGain.connect(masterGain);
-            musicGain.gain.value = volumes.music;
-
-            ambientGain = audioCtx.createGain();
-            ambientGain.connect(masterGain);
-            ambientGain.gain.value = volumes.ambient;
-
-            sfxGain = audioCtx.createGain();
-            sfxGain.connect(masterGain);
-            sfxGain.gain.value = volumes.sfx;
-
-            initialized = true;
-            loadSFX();
-
-            // Retry music/ambient if gameplay already requested them
-            if (pendingMusic) playMusic();
-            if (pendingAmbient) playAmbient();
-
-            // Clean up listeners
+            // Clean up listeners immediately to avoid re-entry
             document.removeEventListener('touchstart', tryCreateContext);
+            document.removeEventListener('touchend', tryCreateContext);
             document.removeEventListener('mousedown', tryCreateContext);
             document.removeEventListener('keydown', tryCreateContext);
         } catch (e) {
@@ -121,7 +110,33 @@ JJ.Audio = (function () {
         }
     }
 
-    function playSFX(id, priority) {
+    function finishInit() {
+        if (initialized) return;
+
+        masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+
+        musicGain = audioCtx.createGain();
+        musicGain.connect(masterGain);
+        musicGain.gain.value = volumes.music;
+
+        ambientGain = audioCtx.createGain();
+        ambientGain.connect(masterGain);
+        ambientGain.gain.value = volumes.ambient;
+
+        sfxGain = audioCtx.createGain();
+        sfxGain.connect(masterGain);
+        sfxGain.gain.value = volumes.sfx;
+
+        initialized = true;
+        loadSFX();
+
+        // Retry music/ambient if gameplay already requested them
+        if (pendingMusic) { pendingMusic = false; playMusic(); }
+        if (pendingAmbient) { pendingAmbient = false; playAmbient(); }
+    }
+
+    function playSFX(id, volumeOverride) {
         if (!initialized || !audioCtx || muted.sfx) return;
         if (!sfxBuffers[id]) return; // Not loaded yet
 
@@ -140,9 +155,11 @@ JJ.Audio = (function () {
 
         const source = audioCtx.createBufferSource();
         source.buffer = sfxBuffers[id];
+        source.loop = false;
 
+        const baseVol = volumeOverride !== undefined ? volumeOverride : volumes.sfx;
         const gainNode = audioCtx.createGain();
-        gainNode.gain.value = volumes.sfx * volumeReduction;
+        gainNode.gain.value = baseVol * volumeReduction;
         source.connect(gainNode);
         gainNode.connect(sfxGain);
 
@@ -239,6 +256,22 @@ JJ.Audio = (function () {
         if (levelCompleteSource) { try { levelCompleteSource.stop(); } catch (e) {} levelCompleteSource = null; }
     }
 
+    function stopMusic() {
+        if (musicSource) { try { musicSource.stop(); } catch (e) {} musicSource = null; }
+        if (levelCompleteSource) { try { levelCompleteSource.stop(); } catch (e) {} levelCompleteSource = null; }
+    }
+
+    function stopAmbient() {
+        if (ambientSource) { try { ambientSource.stop(); } catch (e) {} ambientSource = null; }
+    }
+
+    function stopSFX() {
+        activeSFX.forEach(s => {
+            try { s.source.stop(); } catch (e) {}
+        });
+        activeSFX = [];
+    }
+
     function playLevelComplete() {
         if (!initialized || !audioCtx) return;
         if (muted.music) return;
@@ -257,7 +290,7 @@ JJ.Audio = (function () {
                 if (!buffer || levelCompleteSource) return;
                 levelCompleteSource = audioCtx.createBufferSource();
                 levelCompleteSource.buffer = buffer;
-                levelCompleteSource.loop = true;
+                levelCompleteSource.loop = false;
                 levelCompleteSource.connect(musicGain);
                 levelCompleteSource.start();
             })
@@ -295,6 +328,9 @@ JJ.Audio = (function () {
         playAmbient,
         playLevelComplete,
         stopAll,
+        stopMusic,
+        stopAmbient,
+        stopSFX,
         fadeIn,
         setVolume,
         mute,

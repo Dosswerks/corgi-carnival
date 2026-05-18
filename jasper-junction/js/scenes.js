@@ -18,6 +18,8 @@ JJ.Scenes.MainMenu = function () {
     let bgImage = null;
     let bgLoaded = false;
     let activeButton = -1; // For hover/tap visual feedback
+    let idleTimer = 0;
+    const ATTRACT_DELAY = 15; // seconds before attract mode starts
 
     // Load logo
     logoImage = new Image();
@@ -55,16 +57,19 @@ JJ.Scenes.MainMenu = function () {
             canvas.removeEventListener('mouseleave', this._onMouseLeave);
         },
         _onClick(e) {
+            idleTimer = 0;
             handleMenuClick(e.clientX, e.clientY);
         },
         _onTouchStart(e) {
             e.preventDefault();
+            idleTimer = 0;
             const t = e.touches[0];
             const pos = getCanonicalPos(t.clientX, t.clientY);
             activeButton = getButtonAt(pos.x, pos.y);
         },
         _onTouchEnd(e) {
             e.preventDefault();
+            idleTimer = 0;
             if (activeButton >= 0) {
                 executeMenuAction(buttons[activeButton].action);
             }
@@ -73,11 +78,18 @@ JJ.Scenes.MainMenu = function () {
         _onMouseMove(e) {
             const pos = getCanonicalPos(e.clientX, e.clientY);
             activeButton = getButtonAt(pos.x, pos.y);
+            idleTimer = 0;
         },
         _onMouseLeave() {
             activeButton = -1;
         },
-        update(dt) {},
+        update(dt) {
+            idleTimer += dt;
+            if (idleTimer >= ATTRACT_DELAY) {
+                idleTimer = 0;
+                JJ.Engine.pushScene(JJ.Scenes.Attract());
+            }
+        },
         render(ctx) {
             // Background
             if (bgLoaded) {
@@ -109,11 +121,11 @@ JJ.Scenes.MainMenu = function () {
                 const isActive = (i === activeButton);
 
                 if (isActive) {
-                    ctx.fillStyle = 'rgba(100, 160, 80, 0.95)';
-                    ctx.shadowColor = 'rgba(139, 195, 74, 0.5)';
+                    ctx.fillStyle = 'rgba(70, 68, 65, 0.95)';
+                    ctx.shadowColor = 'rgba(160, 155, 148, 0.3)';
                     ctx.shadowBlur = 10;
                 } else {
-                    ctx.fillStyle = 'rgba(74, 124, 63, 0.8)';
+                    ctx.fillStyle = 'rgba(50, 48, 45, 0.9)';
                 }
 
                 ctx.beginPath();
@@ -121,11 +133,11 @@ JJ.Scenes.MainMenu = function () {
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
-                ctx.strokeStyle = isActive ? '#aade6a' : '#8BC34A';
+                ctx.strokeStyle = isActive ? '#908a82' : '#6a6560';
                 ctx.lineWidth = isActive ? 3 : 2;
                 ctx.stroke();
 
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = '#e0dbd4';
                 ctx.font = 'bold 20px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 7);
@@ -240,7 +252,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             if (JJ.Audio) {
                 JJ.Audio.playSFX('level_start');
                 JJ.Audio.playMusic();
-                JJ.Audio.playAmbient();
+                JJ.Audio.playAmbient(); // Will no-op if already playing
             }
 
             // Tutorial state
@@ -347,10 +359,10 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                     const gateY = pen.gateY;
                     const gateW = pen.gateWidth;
 
-                    // Check if animal is within the gate opening
-                    if (animal.position.x >= gateX - 10 &&
-                        animal.position.x <= gateX + gateW + 10 &&
-                        animal.position.y < gateY + 20) {
+                    // Check if animal is within the gate opening (generous detection)
+                    if (animal.position.x >= gateX - 20 &&
+                        animal.position.x <= gateX + gateW + 20 &&
+                        animal.position.y < gateY + 30) {
 
                         if (animal.type === pen.type) {
                             // Corral!
@@ -389,7 +401,7 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                                 setTimeout(() => {
                                     closePen.closed = true;
                                     JJ.Effects.spawnGateSlam({ x: closeGateX + closeGateW / 2, y: closeGateY });
-                                    JJ.Audio.playSFX('gate_close');
+                                    JJ.Audio.playSFX('gate_close', 1.0);
                                 }, 500);
                             }
 
@@ -421,11 +433,15 @@ JJ.Scenes.Gameplay = function (levelNumber) {
                     animal.stuckPosition = { ...animal.position };
                 }
 
-                if (animal.stuckTimer >= 10 && now - animal.lastUnstuckTime >= 10) {
-                    // Nudge in a random direction away from nearest boundary
-                    const angle = Math.random() * Math.PI * 2;
-                    animal.velocity.x = Math.cos(angle) * animal.baseSpeed * 0.5;
-                    animal.velocity.y = Math.sin(angle) * animal.baseSpeed * 0.5;
+                if (animal.stuckTimer >= 5 && now - animal.lastUnstuckTime >= 5) {
+                    // Nudge toward center of field to escape boundary
+                    const centerX = JJ.CANVAS_WIDTH / 2;
+                    const centerY = JJ.CANVAS_HEIGHT * 0.5;
+                    const toCenterX = centerX - animal.position.x;
+                    const toCenterY = centerY - animal.position.y;
+                    const dist = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY) || 1;
+                    animal.velocity.x = (toCenterX / dist) * animal.baseSpeed * 0.7;
+                    animal.velocity.y = (toCenterY / dist) * animal.baseSpeed * 0.7;
                     animal.stuckTimer = 0;
                     animal.lastUnstuckTime = now;
                     animal.stuckPosition = { ...animal.position };
@@ -455,11 +471,13 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             const result = JJ.Levels.calculateScore(corralledCounts, totalCounts, elapsedTime, config.maxTime);
             result.timedOut = timedOut || false;
 
-            // Audio
-            JJ.Audio.stopAll();
+            // Audio - stop music but keep ambient playing through level complete
             if (result.timedOut) {
+                JJ.Audio.stopAll();
                 JJ.Audio.playSFX('game_over');
             } else {
+                // Stop only music, keep ambient looping
+                if (JJ.Audio.stopMusic) JJ.Audio.stopMusic();
                 JJ.Audio.playSFX('celebration');
             }
 
@@ -475,13 +493,16 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             }
             JJ.Save.clearAutoSave();
 
-            // Confetti for 3 stars
-            if (result.stars === 3 && !result.timedOut) {
-                JJ.Effects.spawnConfetti({ x: JJ.CANVAS_WIDTH / 2, y: JJ.CANVAS_HEIGHT / 2 });
+            // Celebration confetti around Jasper's position for all completions
+            if (!result.timedOut) {
+                const jasper = JJ.Entities.getJasper();
+                const celebPos = jasper ? { x: jasper.position.x, y: jasper.position.y } : { x: JJ.CANVAS_WIDTH / 2, y: JJ.CANVAS_HEIGHT / 2 };
+                JJ.Effects.spawnConfetti(celebPos);
             }
 
             // Show level end
             setTimeout(() => {
+                if (JJ.Effects) JJ.Effects.init(); // Clear all particles
                 JJ.Engine.replaceScene(JJ.Scenes.LevelEnd(levelNumber, result));
             }, levelNumber === 0 ? 1500 : 2000);
         },
@@ -572,14 +593,14 @@ JJ.Scenes.Pause = function () {
 
             buttons.forEach((btn, i) => {
                 const r = getButtonRect(i);
-                ctx.fillStyle = 'rgba(74, 124, 63, 0.9)';
+                ctx.fillStyle = 'rgba(50, 48, 45, 0.9)';
                 ctx.beginPath();
                 ctx.roundRect(r.x, r.y, r.w, r.h, 8);
                 ctx.fill();
-                ctx.strokeStyle = '#8BC34A';
+                ctx.strokeStyle = '#6a6560';
                 ctx.lineWidth = 2;
                 ctx.stroke();
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = '#e0dbd4';
                 ctx.font = 'bold 20px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 7);
@@ -620,6 +641,14 @@ JJ.Scenes.Pause = function () {
 
 // === LEVEL END SCENE ===
 JJ.Scenes.LevelEnd = function (levelNumber, result) {
+    // Load background images
+    let bgImage = null;
+    let bgLoaded = false;
+    const bgSrc = (result && result.timedOut) ? 'assets/game-over-bg.jpg' : 'assets/level-complete-bg.jpg';
+    bgImage = new Image();
+    bgImage.onload = function () { bgLoaded = true; };
+    bgImage.src = bgSrc;
+
     // Primary action button
     let primaryLabel, primaryAction;
     if (levelNumber === 0) {
@@ -659,14 +688,14 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
         onEnter() {
             JJ.Engine.getCanvas().addEventListener('click', this._onClick);
             JJ.Engine.getCanvas().addEventListener('touchend', this._onTouch);
-            // Play level complete music
-            if (JJ.Audio) JJ.Audio.playLevelComplete();
+            // Play level complete music only on successful non-tutorial completion
+            if (JJ.Audio && result && !result.timedOut && levelNumber !== 0) JJ.Audio.playLevelComplete();
         },
         onExit() {
             JJ.Engine.getCanvas().removeEventListener('click', this._onClick);
             JJ.Engine.getCanvas().removeEventListener('touchend', this._onTouch);
-            // Stop level complete music when leaving
-            if (JJ.Audio) JJ.Audio.stopAll();
+            // Stop level complete music when leaving; ambient continues into next level
+            if (JJ.Audio) JJ.Audio.stopMusic();
         },
         _onClick(e) { handleEndClick(e.clientX, e.clientY); },
         _onTouch(e) {
@@ -677,8 +706,15 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
         },
         update(dt) {},
         render(ctx) {
-            ctx.fillStyle = '#1a2a1a';
-            ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            // Photo background
+            if (bgLoaded) {
+                ctx.drawImage(bgImage, 0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            } else {
+                ctx.fillStyle = '#1a2a1a';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            }
 
             // Title
             let title;
@@ -722,14 +758,14 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
 
             // Primary button (centered, prominent)
             const pr = getPrimaryButtonRect();
-            ctx.fillStyle = 'rgba(74, 124, 63, 0.95)';
+            ctx.fillStyle = 'rgba(55, 52, 48, 0.95)';
             ctx.beginPath();
             ctx.roundRect(pr.x, pr.y, pr.w, pr.h, 10);
             ctx.fill();
-            ctx.strokeStyle = '#8BC34A';
+            ctx.strokeStyle = '#7a7570';
             ctx.lineWidth = 3;
             ctx.stroke();
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = '#e0dbd4';
             ctx.font = 'bold 24px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(primaryLabel, pr.x + pr.w / 2, pr.y + pr.h / 2 + 8);
@@ -838,13 +874,13 @@ JJ.Scenes.LevelSelect = function () {
                 const unlocked = lvl === 0 || lvl <= (save.currentLevel || 1);
                 const stars = save.starRatings[lvl] || 0;
 
-                ctx.fillStyle = unlocked ? 'rgba(74, 124, 63, 0.8)' : 'rgba(60, 60, 60, 0.6)';
+                ctx.fillStyle = unlocked ? 'rgba(50, 48, 45, 0.9)' : 'rgba(30, 30, 28, 0.6)';
                 ctx.beginPath();
                 ctx.roundRect(r.x, r.y, r.w, r.h, 10);
                 ctx.fill();
 
                 if (unlocked) {
-                    ctx.strokeStyle = '#8BC34A';
+                    ctx.strokeStyle = '#6a6560';
                     ctx.lineWidth = 2;
                     ctx.stroke();
                 }
@@ -1052,6 +1088,235 @@ JJ.Scenes.Credits = function () {
             ctx.fillStyle = '#888';
             ctx.font = '16px sans-serif';
             ctx.fillText('Tap anywhere to close', JJ.CANVAS_WIDTH / 2, 600);
+        },
+    };
+};
+
+
+// === ATTRACT MODE ===
+JJ.Scenes.Attract = function () {
+    // Demo: AI-controlled Jasper herding animals using real game sprites
+    let demoTimer = 0;
+    const DEMO_DURATION = 20; // seconds
+    let aiTarget = { x: JJ.CANVAS_WIDTH / 2, y: JJ.CANVAS_HEIGHT / 2 };
+    let aiChangeTimer = 0;
+    let bgImage = null;
+    let bgLoaded = false;
+
+    bgImage = new Image();
+    bgImage.onload = function () { bgLoaded = true; };
+    bgImage.src = 'assets/jasper-junction-background.jpg';
+
+    // Load sprites directly for attract mode
+    let sprites = {
+        jasperStand: new Image(),
+        jasperRun1: new Image(),
+        jasperRun2: new Image(),
+        sheep1: new Image(),
+        sheep2: new Image(),
+        cow1: new Image(),
+        cow2: new Image(),
+        goat1: new Image(),
+        goat2: new Image(),
+    };
+    sprites.jasperStand.src = 'assets/jasper-stand.png';
+    sprites.jasperRun1.src = 'assets/jasper-run-1.png';
+    sprites.jasperRun2.src = 'assets/jasper-run-2.png';
+    sprites.sheep1.src = 'assets/sheep-1.png';
+    sprites.sheep2.src = 'assets/sheep-2.png';
+    sprites.cow1.src = 'assets/cow-1.png';
+    sprites.cow2.src = 'assets/cow-2.png';
+    sprites.goat1.src = 'assets/goat-1.png';
+    sprites.goat2.src = 'assets/goat-2.png';
+
+    // Demo entities
+    let jasper = {
+        x: JJ.CANVAS_WIDTH / 2,
+        y: JJ.CANVAS_HEIGHT * 0.6,
+        vx: 0, vy: 0,
+        speed: 130,
+        frame: 0,
+        frameTimer: 0,
+        facing: 'left',
+        moving: false,
+    };
+
+    let animals = [];
+    function createDemoAnimal(type, x, y) {
+        return {
+            type: type,
+            x: x, y: y,
+            vx: 0, vy: 0,
+            speed: 50 + Math.random() * 20,
+            frame: 0,
+            frameTimer: 0,
+            facing: 'left',
+            wanderTimer: Math.random() * 3,
+        };
+    }
+
+    for (let i = 0; i < 4; i++) {
+        animals.push(createDemoAnimal(JJ.EntityType.Sheep, 300 + Math.random() * 800, 300 + Math.random() * 250));
+    }
+    for (let i = 0; i < 3; i++) {
+        animals.push(createDemoAnimal(JJ.EntityType.Cow, 300 + Math.random() * 800, 300 + Math.random() * 250));
+    }
+    for (let i = 0; i < 2; i++) {
+        animals.push(createDemoAnimal(JJ.EntityType.Goat, 300 + Math.random() * 800, 300 + Math.random() * 250));
+    }
+
+    return {
+        name: 'attract',
+        onEnter() {
+            JJ.Engine.getCanvas().addEventListener('click', this._onInteract);
+            JJ.Engine.getCanvas().addEventListener('touchstart', this._onInteract);
+            window.addEventListener('keydown', this._onInteract);
+        },
+        onExit() {
+            JJ.Engine.getCanvas().removeEventListener('click', this._onInteract);
+            JJ.Engine.getCanvas().removeEventListener('touchstart', this._onInteract);
+            window.removeEventListener('keydown', this._onInteract);
+        },
+        _onInteract(e) {
+            if (e.preventDefault) e.preventDefault();
+            JJ.Engine.popScene();
+        },
+        update(dt) {
+            demoTimer += dt;
+            if (demoTimer >= DEMO_DURATION) {
+                JJ.Engine.popScene();
+                return;
+            }
+
+            // AI: Jasper moves toward a target that changes periodically
+            aiChangeTimer -= dt;
+            if (aiChangeTimer <= 0) {
+                if (animals.length > 0) {
+                    const target = animals[Math.floor(Math.random() * animals.length)];
+                    aiTarget = { x: target.x + 80, y: target.y + 40 };
+                }
+                aiChangeTimer = 2 + Math.random() * 2;
+            }
+
+            // Move Jasper toward target
+            const dx = aiTarget.x - jasper.x;
+            const dy = aiTarget.y - jasper.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 10) {
+                jasper.vx = (dx / dist) * jasper.speed;
+                jasper.vy = (dy / dist) * jasper.speed;
+                jasper.facing = jasper.vx > 0 ? 'right' : 'left';
+                jasper.moving = true;
+            } else {
+                jasper.vx = 0;
+                jasper.vy = 0;
+                jasper.moving = false;
+            }
+            jasper.x += jasper.vx * dt;
+            jasper.y += jasper.vy * dt;
+            jasper.x = Math.max(200, Math.min(JJ.CANVAS_WIDTH - 200, jasper.x));
+            jasper.y = Math.max(280, Math.min(620, jasper.y));
+
+            jasper.frameTimer += dt;
+            if (jasper.frameTimer > 0.15) {
+                jasper.frameTimer = 0;
+                jasper.frame = (jasper.frame + 1) % 2;
+            }
+
+            // Move animals
+            animals.forEach(a => {
+                const adx = a.x - jasper.x;
+                const ady = a.y - jasper.y;
+                const adist = Math.sqrt(adx * adx + ady * ady);
+
+                if (adist < 150) {
+                    a.vx = (adx / adist) * a.speed * 1.5;
+                    a.vy = (ady / adist) * a.speed * 1.5;
+                } else {
+                    a.wanderTimer -= dt;
+                    if (a.wanderTimer <= 0) {
+                        const angle = Math.random() * Math.PI * 2;
+                        a.vx = Math.cos(angle) * a.speed * 0.4;
+                        a.vy = Math.sin(angle) * a.speed * 0.4;
+                        a.wanderTimer = 2 + Math.random() * 3;
+                    }
+                }
+
+                a.x += a.vx * dt;
+                a.y += a.vy * dt;
+                a.x = Math.max(200, Math.min(JJ.CANVAS_WIDTH - 200, a.x));
+                a.y = Math.max(280, Math.min(620, a.y));
+                a.vx *= 0.95;
+                a.vy *= 0.95;
+
+                if (a.vx > 2) a.facing = 'right';
+                else if (a.vx < -2) a.facing = 'left';
+
+                a.frameTimer += dt;
+                if (a.frameTimer > 0.2) {
+                    a.frameTimer = 0;
+                    a.frame = (a.frame + 1) % 2;
+                }
+            });
+        },
+        render(ctx) {
+            // Background
+            if (bgLoaded) {
+                ctx.drawImage(bgImage, 0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            } else {
+                ctx.fillStyle = '#4a7c3f';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            }
+
+            // Sort all entities by Y for proper overlap
+            const allEntities = [...animals, { isJasper: true, ...jasper }];
+            allEntities.sort((a, b) => a.y - b.y);
+
+            allEntities.forEach(e => {
+                ctx.save();
+                ctx.translate(e.x, e.y);
+                if (e.facing === 'left') ctx.scale(-1, 1);
+
+                if (e.isJasper) {
+                    // Draw Jasper with real sprites
+                    let sprite;
+                    if (jasper.moving) {
+                        sprite = jasper.frame === 0 ? sprites.jasperRun1 : sprites.jasperRun2;
+                    } else {
+                        sprite = sprites.jasperStand;
+                    }
+                    if (sprite.complete && sprite.naturalWidth > 0) {
+                        ctx.drawImage(sprite, -48, -36, 96, 72);
+                    }
+                } else {
+                    // Draw animal with real sprites
+                    let sprite, drawW, drawH;
+                    if (e.type === JJ.EntityType.Sheep) {
+                        sprite = e.frame === 0 ? sprites.sheep1 : sprites.sheep2;
+                        drawW = 100; drawH = 80;
+                    } else if (e.type === JJ.EntityType.Cow) {
+                        sprite = e.frame === 0 ? sprites.cow1 : sprites.cow2;
+                        drawW = 128; drawH = 96;
+                    } else {
+                        sprite = e.frame === 0 ? sprites.goat1 : sprites.goat2;
+                        drawW = 104; drawH = 88;
+                    }
+                    if (sprite.complete && sprite.naturalWidth > 0) {
+                        ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+                    }
+                }
+
+                ctx.restore();
+            });
+
+            // "Tap to play" prompt (pulsing)
+            const pulse = Math.sin(performance.now() * 0.004) * 0.3 + 0.7;
+            ctx.globalAlpha = pulse;
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tap anywhere to play', JJ.CANVAS_WIDTH / 2, JJ.CANVAS_HEIGHT - 60);
+            ctx.globalAlpha = 1;
         },
     };
 };

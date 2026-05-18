@@ -178,19 +178,19 @@ JJ.Physics = (function () {
     function constrainToBounds(entity) {
         const r = entity.collisionRadius;
 
-        // Allow animals to move up into gate zones when horizontally aligned
+        // Allow animals to move up into gate zones ONLY when horizontally within the gate opening
         let allowGate = false;
         let gateMinY = 0;
         if (JJ.Levels) {
             const pens = JJ.Levels.getPens();
-            const fieldTop = 251; // top of upper field rect
+            const fieldTop = 265; // top of upper field rect
             for (const pen of pens) {
-                // Only allow through the actual gate opening, not the whole pen
-                if (entity.position.x >= pen.gateX &&
-                    entity.position.x <= pen.gateX + pen.gateWidth &&
-                    entity.position.y < fieldTop + 50) {
+                // Gate check: generous horizontal zone for larger sprites
+                if (entity.position.x >= pen.gateX - 20 &&
+                    entity.position.x <= pen.gateX + pen.gateWidth + 20 &&
+                    entity.position.y < fieldTop + 60) {
                     allowGate = true;
-                    gateMinY = pen.gateY - 30;
+                    gateMinY = pen.gateY - 40;
                     break;
                 }
             }
@@ -214,16 +214,27 @@ JJ.Physics = (function () {
                 entity.position.x = constrained.x;
             } else {
                 if (entity.type !== JJ.EntityType.Jasper) {
-                    // Hit boundary - stop velocity in that direction and dampen
-                    if (constrained.x !== entity.position.x) {
+                    // Redirect along the wall instead of bouncing back
+                    const hitX = constrained.x !== entity.position.x;
+                    const hitY = constrained.y !== entity.position.y;
+
+                    if (hitX && hitY) {
+                        // Corner: deflect toward center of field
+                        const centerX = JJ.CANVAS_WIDTH / 2;
+                        const centerY = JJ.CANVAS_HEIGHT / 2;
+                        const toCenterX = centerX - entity.position.x;
+                        const toCenterY = centerY - entity.position.y;
+                        const dist = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY) || 1;
+                        const speed = Math.sqrt(entity.velocity.x * entity.velocity.x + entity.velocity.y * entity.velocity.y);
+                        entity.velocity.x = (toCenterX / dist) * speed * 0.5;
+                        entity.velocity.y = (toCenterY / dist) * speed * 0.5;
+                    } else if (hitX) {
+                        // Hit left/right wall: zero X velocity, keep Y momentum
                         entity.velocity.x = 0;
-                    }
-                    if (constrained.y !== entity.position.y) {
+                    } else if (hitY) {
+                        // Hit top/bottom wall: zero Y velocity, keep X momentum
                         entity.velocity.y = 0;
                     }
-                    // General damping near boundaries to prevent jitter
-                    entity.velocity.x *= 0.9;
-                    entity.velocity.y *= 0.9;
                 }
                 entity.position.x = constrained.x;
                 entity.position.y = constrained.y;

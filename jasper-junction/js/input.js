@@ -95,6 +95,19 @@ JJ.Input = (function () {
 
         if (!isInBounds(pos)) return;
 
+        // Check if tapping the BARK button
+        if (isInBarkButton(pos)) {
+            barkButtonActive = true;
+            tryBark();
+            return;
+        }
+
+        // Check if tapping the pause button
+        if (isInPauseButton(pos)) {
+            JJ.Engine.pushScene(JJ.Scenes.Pause());
+            return;
+        }
+
         checkDoubleTap();
 
         if (!isInDeadzone(pos)) {
@@ -237,6 +250,23 @@ JJ.Input = (function () {
 
     function triggerBarkFromButton() {
         tryBark();
+    }
+
+    // Hit-test for the on-screen BARK button (matches ui.js drawBarkButton position)
+    function isInBarkButton(pos) {
+        const bx = 160;
+        const by = JJ.CANVAS_HEIGHT - 170;
+        const radius = 40;
+        const dx = pos.x - bx;
+        const dy = pos.y - by;
+        return (dx * dx + dy * dy) <= (radius + 10) * (radius + 10); // Slightly generous hit area
+    }
+
+    // Hit-test for the pause button (matches ui.js drawPauseButton position)
+    function isInPauseButton(pos) {
+        const px = JJ.CANVAS_WIDTH - 40;
+        const py = 40;
+        return pos.x >= px - 24 && pos.x <= px + 24 && pos.y >= py - 24 && pos.y <= py + 24;
     }
 
     return {

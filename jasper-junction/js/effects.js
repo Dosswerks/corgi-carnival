@@ -10,7 +10,7 @@ JJ.Effects = (function () {
     let shakeAmplitude = 0;
     let shakeDuration = 0;
     let shakeTimer = 0;
-    const MAX_PARTICLES = 200;
+    const MAX_PARTICLES = 400;
 
     function init() {
         particles = [];
@@ -52,6 +52,11 @@ JJ.Effects = (function () {
             if (p.type === 'floating_text') {
                 p.velocity.y = -40; // Rise
             }
+            if (p.type === 'celebration_text') {
+                // Stay in place, no movement
+                p.velocity.x = 0;
+                p.velocity.y = 0;
+            }
         }
     }
 
@@ -60,7 +65,22 @@ JJ.Effects = (function () {
             ctx.save();
             ctx.globalAlpha = p.alpha;
 
-            if (p.type === 'floating_text') {
+            if (p.type === 'celebration_text') {
+                // Scale-in effect
+                p.scaleIn = Math.min(1, (p.scaleIn || 0) + 0.08);
+                const scale = p.scaleIn;
+                ctx.translate(p.position.x, p.position.y);
+                ctx.scale(scale, scale);
+                // Text shadow/outline for readability
+                ctx.font = 'bold ' + p.size + 'px Georgia, serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 6;
+                ctx.strokeText(p.text, 0, 0);
+                ctx.fillStyle = p.color;
+                ctx.fillText(p.text, 0, 0);
+            } else if (p.type === 'floating_text') {
                 ctx.fillStyle = p.color;
                 ctx.font = 'bold ' + p.size + 'px sans-serif';
                 ctx.textAlign = 'center';
@@ -86,8 +106,8 @@ JJ.Effects = (function () {
         for (let i = 0; i < 2; i++) {
             if (particles.length >= MAX_PARTICLES) return;
             particles.push({
-                position: { x: position.x + (Math.random() - 0.5) * 10, y: position.y + 15 },
-                velocity: { x: (Math.random() - 0.5) * 20, y: -10 - Math.random() * 10 },
+                position: { x: position.x + (Math.random() - 0.5) * 16, y: position.y },
+                velocity: { x: (Math.random() - 0.5) * 20, y: -8 - Math.random() * 8 },
                 life: 0.5,
                 maxLife: 0.5,
                 size: 3 + Math.random() * 2,
@@ -130,20 +150,54 @@ JJ.Effects = (function () {
     }
 
     function spawnConfetti(position) {
-        const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff'];
-        for (let i = 0; i < 30; i++) {
-            if (particles.length >= MAX_PARTICLES) return;
+        const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff', '#ff8800', '#ff0088'];
+
+        // Four staggered explosions around the position
+        const offsets = [
+            { x: -80, y: -40, delay: 0 },
+            { x: 60, y: -60, delay: 200 },
+            { x: -50, y: 50, delay: 400 },
+            { x: 70, y: 30, delay: 600 },
+        ];
+
+        offsets.forEach(offset => {
+            setTimeout(() => {
+                const cx = position.x + offset.x + (Math.random() - 0.5) * 40;
+                const cy = position.y + offset.y + (Math.random() - 0.5) * 40;
+
+                for (let i = 0; i < 25; i++) {
+                    if (particles.length >= MAX_PARTICLES) return;
+                    const angle = (i / 25) * Math.PI * 2 + Math.random() * 0.5;
+                    const speed = 80 + Math.random() * 180;
+                    particles.push({
+                        position: { x: cx + (Math.random() - 0.5) * 30, y: cy + (Math.random() - 0.5) * 30 },
+                        velocity: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed - 80 },
+                        life: 2.5,
+                        maxLife: 2.5,
+                        size: 4 + Math.random() * 5,
+                        alpha: 1,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        type: 'confetti',
+                    });
+                }
+            }, offset.delay);
+        });
+
+        // "WELL DONE!" text - large, center screen, fades out
+        setTimeout(() => {
             particles.push({
-                position: { x: position.x + (Math.random() - 0.5) * 200, y: position.y - 50 },
-                velocity: { x: (Math.random() - 0.5) * 200, y: -100 - Math.random() * 150 },
-                life: 2,
-                maxLife: 2,
-                size: 4 + Math.random() * 4,
+                position: { x: JJ.CANVAS_WIDTH / 2, y: JJ.CANVAS_HEIGHT / 2 },
+                velocity: { x: 0, y: 0 },
+                life: 2.5,
+                maxLife: 2.5,
+                size: 64,
                 alpha: 1,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                type: 'confetti',
+                color: '#FFD700',
+                type: 'celebration_text',
+                text: 'WELL DONE!',
+                scaleIn: 0,
             });
-        }
+        }, 300);
     }
 
     function spawnFloatingText(position, text, color) {
