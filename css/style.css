@@ -166,7 +166,7 @@ body {
 }
 
 .logo-area {
-    margin-bottom: 8px;
+    margin-bottom: 0;
 }
 
 .hub-logo {
@@ -444,12 +444,12 @@ body {
 @media (max-width: 600px) {
     .game-grid {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 8px;
     }
 
     .game-card {
         flex-direction: row;
-        padding: 12px;
+        padding: 10px;
         gap: 10px;
     }
 
@@ -468,11 +468,15 @@ body {
     }
 
     .hub-container {
-        gap: 16px;
+        gap: 10px;
     }
 
     .hub-logo {
         max-width: 180px;
+    }
+
+    .logo-area {
+        margin-bottom: 0;
     }
 
     .bunting {
@@ -487,7 +491,7 @@ body {
     }
 
     .hub-footer {
-        padding-top: 8px;
+        padding-top: 4px;
     }
 }
 
