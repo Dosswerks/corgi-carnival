@@ -4,58 +4,266 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corgi Carnival</title>
+    <meta name="description" content="A trio of corgi-powered games. Herd sheep, catch treats, and score goals with your favorite corgis!">
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Corgi Carnival">
+    <meta property="og:description" content="A trio of corgi-powered games. Herd sheep, catch treats, and score goals with your favorite corgis!">
+    <meta property="og:image" content="assets/corgi-carnival-og.png">
+    <meta property="og:url" content="">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Corgi Carnival">
+    <meta name="twitter:description" content="A trio of corgi-powered games. Herd sheep, catch treats, and score goals with your favorite corgis!">
+    <meta name="twitter:image" content="assets/corgi-carnival-og.png">
+
     <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
+    <!-- Searchlight effects -->
+    <div class="searchlight searchlight-left"></div>
+    <div class="searchlight searchlight-right"></div>
+
+    <!-- Sparkle particles canvas -->
+    <canvas id="sparkles" aria-hidden="true"></canvas>
+
     <div class="hub-container">
         <header class="hub-header">
             <div class="logo-area">
-                <canvas id="corgi-logo" width="120" height="90" aria-hidden="true"></canvas>
+                <img src="assets/corgi-carnival-logo.png" alt="Corgi Carnival" class="hub-logo" width="300" height="300">
             </div>
-            <h1 class="hub-title">Corgi Carnival</h1>
             <p class="hub-tagline">A trio of corgi-powered games</p>
         </header>
 
+        <!-- Bunting pennants -->
+        <div class="bunting" aria-hidden="true">
+            <svg viewBox="0 0 600 40" preserveAspectRatio="none" class="bunting-svg">
+                <path d="M0,5 Q300,15 600,5" stroke="rgba(212,160,48,0.4)" stroke-width="1.5" fill="none" class="bunting-string"/>
+                <polygon points="60,8 75,35 90,8" fill="#8b2020" class="pennant p1"/>
+                <polygon points="120,10 135,37 150,10" fill="#d4a030" class="pennant p2"/>
+                <polygon points="180,11 195,38 210,11" fill="#1c2a4a" class="pennant p3"/>
+                <polygon points="240,12 255,39 270,12" fill="#8b2020" class="pennant p4"/>
+                <polygon points="300,12 315,39 330,12" fill="#d4a030" class="pennant p5"/>
+                <polygon points="360,11 375,38 390,11" fill="#1c2a4a" class="pennant p6"/>
+                <polygon points="420,10 435,37 450,10" fill="#8b2020" class="pennant p7"/>
+                <polygon points="480,8 495,35 510,8" fill="#d4a030" class="pennant p8"/>
+                <polygon points="540,7 555,34 570,7" fill="#1c2a4a" class="pennant p9"/>
+            </svg>
+        </div>
+
         <main class="game-grid">
             <a href="jasper-junction/index.html" class="game-card" id="card-jasper">
+                <div class="card-shimmer"></div>
                 <div class="card-icon">
-                    <canvas class="card-canvas" id="canvas-jasper" width="100" height="80" aria-hidden="true"></canvas>
+                    <img src="assets/jasper-junction-thumb.png" alt="Jasper Junction" class="card-thumb" width="80" height="80">
                 </div>
                 <div class="card-content">
                     <h2 class="card-title">Jasper Junction</h2>
                     <p class="card-tagline">Herd sheep, cows &amp; goats on a Welsh hillside</p>
                 </div>
-                <div class="card-badge">Herding</div>
             </a>
 
             <a href="archers-alley/index.html" class="game-card" id="card-archers">
+                <div class="card-shimmer"></div>
+                <div class="coming-soon-ribbon">Coming Soon</div>
                 <div class="card-icon">
-                    <canvas class="card-canvas" id="canvas-archers" width="100" height="80" aria-hidden="true"></canvas>
+                    <img src="assets/archers-alley-thumb.png" alt="Archer's Alley" class="card-thumb" width="80" height="80">
                 </div>
                 <div class="card-content">
                     <h2 class="card-title">Archer's Alley</h2>
-                    <p class="card-tagline">Defend the carnival from incoming chaos</p>
+                    <p class="card-tagline">Catch treats thrown by Mom</p>
                 </div>
-                <div class="card-badge">Kaboom</div>
             </a>
 
             <a href="peachy-polo/index.html" class="game-card" id="card-peachy">
+                <div class="card-shimmer"></div>
+                <div class="coming-soon-ribbon">Coming Soon</div>
                 <div class="card-icon">
-                    <canvas class="card-canvas" id="canvas-peachy" width="100" height="80" aria-hidden="true"></canvas>
+                    <img src="assets/peachy-polo-thumb.png" alt="Peachy Polo" class="card-thumb" width="80" height="80">
                 </div>
                 <div class="card-content">
                     <h2 class="card-title">Peachy Polo</h2>
-                    <p class="card-tagline">Bounce, break &amp; score with corgi flair</p>
+                    <p class="card-tagline">Play ball, make a mess, and score goals</p>
                 </div>
-                <div class="card-badge">Breakout</div>
             </a>
         </main>
 
         <footer class="hub-footer">
-            <p>&copy; 2026 Corgi Carnival &bull; All games best played in landscape</p>
+            <p class="footer-copyright">&copy; 2026 <a href="https://andrewdoss.com" target="_blank" rel="noopener noreferrer">Andrew Doss</a></p>
+            <div class="tip-jar-section">
+                <p class="tip-jar-text">Enjoying the carnival? Tips help keep the games coming!</p>
+                <div class="tip-jar-row">
+                    <form action="https://www.paypal.com/donate" method="post" target="_blank">
+                        <input type="hidden" name="hosted_button_id" value="HDD77QKGC6XXN">
+                        <button type="submit" class="tip-jar-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="100" viewBox="0 0 80 100" fill="none">
+                                <rect x="16" y="8" width="48" height="8" rx="2" fill="#aaa"/>
+                                <rect x="34" y="2" width="12" height="8" rx="2" fill="#999"/>
+                                <rect x="36" y="4" width="8" height="3" rx="1" fill="#777"/>
+                                <path d="M18 16 L16 82 Q16 90 24 90 L56 90 Q64 90 64 82 L62 16 Z" fill="rgba(180,220,255,0.18)" stroke="rgba(200,230,255,0.5)" stroke-width="2"/>
+                                <path d="M22 20 L21 75" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+                                <text x="40" y="38" text-anchor="middle" font-size="9" font-weight="bold" fill="rgba(255,255,255,0.7)" font-family="sans-serif" letter-spacing="1">TIP JAR</text>
+                                <g transform="rotate(-12 40 55)"><rect x="26" y="48" width="30" height="16" rx="2" fill="#3a7d44"/><text x="41" y="60" text-anchor="middle" font-size="12" font-weight="bold" fill="#6ec77a" font-family="serif">$</text></g>
+                                <g transform="rotate(8 40 60)"><rect x="24" y="54" width="30" height="16" rx="2" fill="#2e6b38"/><text x="39" y="66" text-anchor="middle" font-size="12" font-weight="bold" fill="#5cb868" font-family="serif">$</text></g>
+                                <g transform="rotate(-5 40 65)"><rect x="28" y="62" width="30" height="16" rx="2" fill="#357a3f"/><text x="43" y="74" text-anchor="middle" font-size="12" font-weight="bold" fill="#7dd48a" font-family="serif">$</text></g>
+                                <ellipse cx="30" cy="78" rx="6" ry="3" fill="#d4a017" stroke="#b8860b" stroke-width="1"/>
+                                <ellipse cx="42" cy="80" rx="5" ry="2.5" fill="#daa520" stroke="#b8860b" stroke-width="1"/>
+                                <ellipse cx="52" cy="77" rx="5" ry="3" fill="#c9960c" stroke="#a07608" stroke-width="1"/>
+                            </svg>
+                        </button>
+                    </form>
+                    <div class="qr-wrapper">
+                        <div id="qr-code"></div>
+                    </div>
+                </div>
+            </div>
         </footer>
     </div>
 
-    <script src="js/main.js"></script>
+    <!-- Sound toggle -->
+    <button class="sound-toggle" id="sound-toggle" aria-label="Toggle carnival ambience">
+        <svg class="sound-icon sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.08"/>
+        </svg>
+        <svg class="sound-icon sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+    </button>
+
+    <script>
+    (function(){
+        // QR Code
+        var qr = qrcode(0, 'L');
+        qr.addData('https://www.paypal.com/donate/?hosted_button_id=HDD77QKGC6XXN');
+        qr.make();
+        var el = document.getElementById('qr-code');
+        if (el) el.innerHTML = qr.createSvgTag({cellSize:2, margin:0});
+
+        // Sparkle particles
+        var canvas = document.getElementById('sparkles');
+        var ctx = canvas.getContext('2d');
+        var particles = [];
+        var maxParticles = 40;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: canvas.height + 10,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -(Math.random() * 0.6 + 0.2),
+                size: Math.random() * 2.5 + 1,
+                opacity: Math.random() * 0.6 + 0.2,
+                life: 0,
+                maxLife: Math.random() * 400 + 200,
+                color: Math.random() > 0.5 ? '212, 160, 48' : '255, 220, 100'
+            };
+        }
+
+        function animateSparkles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (particles.length < maxParticles && Math.random() < 0.15) {
+                particles.push(createParticle());
+            }
+
+            for (var i = particles.length - 1; i >= 0; i--) {
+                var p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life++;
+
+                var fadeRatio = 1 - (p.life / p.maxLife);
+                var alpha = p.opacity * fadeRatio;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(' + p.color + ',' + alpha + ')';
+                ctx.fill();
+
+                if (p.life >= p.maxLife || p.y < -10) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animateSparkles);
+        }
+        animateSparkles();
+
+        // Ambient sound
+        var audioCtx = null;
+        var isPlaying = false;
+        var gainNode = null;
+        var noiseSource = null;
+        var toggleBtn = document.getElementById('sound-toggle');
+        var soundOn = toggleBtn.querySelector('.sound-on');
+        var soundOff = toggleBtn.querySelector('.sound-off');
+
+        function createAmbience() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.03;
+
+            // Create gentle noise-based ambience
+            var bufferSize = audioCtx.sampleRate * 4;
+            var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.5;
+            }
+
+            noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = buffer;
+            noiseSource.loop = true;
+
+            // Bandpass filter to make it sound like distant crowd murmur
+            var filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 400;
+            filter.Q.value = 0.5;
+
+            noiseSource.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            noiseSource.start();
+            isPlaying = true;
+        }
+
+        toggleBtn.addEventListener('click', function() {
+            if (!isPlaying) {
+                if (!audioCtx) {
+                    createAmbience();
+                } else {
+                    audioCtx.resume();
+                    isPlaying = true;
+                }
+                soundOn.style.display = '';
+                soundOff.style.display = 'none';
+            } else {
+                if (audioCtx) audioCtx.suspend();
+                isPlaying = false;
+                soundOn.style.display = 'none';
+                soundOff.style.display = '';
+            }
+        });
+
+        // Start with sound off
+        soundOn.style.display = 'none';
+        soundOff.style.display = '';
+    })();
+    </script>
 </body>
 </html>
