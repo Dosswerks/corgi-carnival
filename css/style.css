@@ -151,7 +151,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 20px;
     position: relative;
     z-index: 1;
 }
@@ -234,8 +234,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 20px 16px;
+    gap: 10px;
+    padding: 16px 14px;
     background: var(--color-card-bg);
     border: 2px solid var(--color-gold-border);
     border-radius: var(--radius);
@@ -444,13 +444,13 @@ body {
 @media (max-width: 600px) {
     .game-grid {
         grid-template-columns: 1fr;
-        gap: 14px;
+        gap: 10px;
     }
 
     .game-card {
         flex-direction: row;
-        padding: 16px;
-        gap: 12px;
+        padding: 12px;
+        gap: 10px;
     }
 
     .card-content {
@@ -463,16 +463,16 @@ body {
     }
 
     .card-thumb {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
     }
 
     .hub-container {
-        gap: 20px;
+        gap: 16px;
     }
 
     .hub-logo {
-        max-width: 200px;
+        max-width: 180px;
     }
 
     .bunting {
@@ -484,6 +484,10 @@ body {
         padding: 3px 28px;
         top: 10px;
         right: -28px;
+    }
+
+    .hub-footer {
+        padding-top: 8px;
     }
 }
 
