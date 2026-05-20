@@ -229,7 +229,7 @@ body {
     width: 100%;
 }
 
-/* Game Cards - ticket stub shape */
+/* Game Cards */
 .game-card {
     display: flex;
     flex-direction: column;
@@ -246,17 +246,6 @@ body {
     overflow: hidden;
     min-width: 44px;
     min-height: 44px;
-    /* Ticket stub perforated edge on the left */
-    mask-image: radial-gradient(circle 5px at 0% 20%, transparent 4px, black 4.5px),
-                radial-gradient(circle 5px at 0% 40%, transparent 4px, black 4.5px),
-                radial-gradient(circle 5px at 0% 60%, transparent 4px, black 4.5px),
-                radial-gradient(circle 5px at 0% 80%, transparent 4px, black 4.5px);
-    mask-composite: intersect;
-    -webkit-mask-image: radial-gradient(circle 5px at 0% 20%, transparent 4px, black 4.5px),
-                        radial-gradient(circle 5px at 0% 40%, transparent 4px, black 4.5px),
-                        radial-gradient(circle 5px at 0% 60%, transparent 4px, black 4.5px),
-                        radial-gradient(circle 5px at 0% 80%, transparent 4px, black 4.5px);
-    -webkit-mask-composite: source-in;
 }
 
 .game-card:hover,
@@ -462,9 +451,6 @@ body {
         flex-direction: row;
         padding: 16px;
         gap: 12px;
-        /* Remove ticket stub on mobile for cleaner look */
-        mask-image: none;
-        -webkit-mask-image: none;
     }
 
     .card-content {
@@ -542,8 +528,6 @@ body {
     .game-card {
         padding: 12px 10px;
         gap: 8px;
-        mask-image: none;
-        -webkit-mask-image: none;
     }
 
     .card-thumb {
