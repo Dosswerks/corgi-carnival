@@ -123,19 +123,6 @@
         </footer>
     </div>
 
-    <!-- Sound toggle -->
-    <button class="sound-toggle" id="sound-toggle" aria-label="Toggle carnival ambience">
-        <svg class="sound-icon sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-            <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.08"/>
-        </svg>
-        <svg class="sound-icon sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-            <line x1="23" y1="9" x2="17" y2="15"/>
-            <line x1="17" y1="9" x2="23" y2="15"/>
-        </svg>
-    </button>
-
     <script>
     (function(){
         // QR Code
@@ -201,67 +188,6 @@
             requestAnimationFrame(animateSparkles);
         }
         animateSparkles();
-
-        // Ambient sound
-        var audioCtx = null;
-        var isPlaying = false;
-        var gainNode = null;
-        var noiseSource = null;
-        var toggleBtn = document.getElementById('sound-toggle');
-        var soundOn = toggleBtn.querySelector('.sound-on');
-        var soundOff = toggleBtn.querySelector('.sound-off');
-
-        function createAmbience() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            gainNode = audioCtx.createGain();
-            gainNode.gain.value = 0.03;
-
-            // Create gentle noise-based ambience
-            var bufferSize = audioCtx.sampleRate * 4;
-            var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            var data = buffer.getChannelData(0);
-            for (var i = 0; i < bufferSize; i++) {
-                data[i] = (Math.random() * 2 - 1) * 0.5;
-            }
-
-            noiseSource = audioCtx.createBufferSource();
-            noiseSource.buffer = buffer;
-            noiseSource.loop = true;
-
-            // Bandpass filter to make it sound like distant crowd murmur
-            var filter = audioCtx.createBiquadFilter();
-            filter.type = 'bandpass';
-            filter.frequency.value = 400;
-            filter.Q.value = 0.5;
-
-            noiseSource.connect(filter);
-            filter.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            noiseSource.start();
-            isPlaying = true;
-        }
-
-        toggleBtn.addEventListener('click', function() {
-            if (!isPlaying) {
-                if (!audioCtx) {
-                    createAmbience();
-                } else {
-                    audioCtx.resume();
-                    isPlaying = true;
-                }
-                soundOn.style.display = '';
-                soundOff.style.display = 'none';
-            } else {
-                if (audioCtx) audioCtx.suspend();
-                isPlaying = false;
-                soundOn.style.display = 'none';
-                soundOff.style.display = '';
-            }
-        });
-
-        // Start with sound off
-        soundOn.style.display = 'none';
-        soundOff.style.display = '';
     })();
     </script>
 </body>
