@@ -62,11 +62,11 @@
                 </div>
                 <div class="card-content">
                     <h2 class="card-title">Jasper Junction</h2>
-                    <p class="card-tagline">Herd sheep, cows &amp; goats on a Welsh hillside</p>
+                    <p class="card-tagline">Herd sheep, cows &amp; goats</p>
                 </div>
             </a>
 
-            <a href="archers-alley/index.html" class="game-card" id="card-archers">
+            <a href="archers-alley/index.html" class="game-card coming-soon-card" id="card-archers" onclick="event.preventDefault(); document.getElementById('coming-soon-modal').classList.add('active');">
                 <div class="card-shimmer"></div>
                 <div class="coming-soon-ribbon">Coming Soon</div>
                 <div class="card-icon">
@@ -78,7 +78,7 @@
                 </div>
             </a>
 
-            <a href="peachy-polo/index.html" class="game-card" id="card-peachy">
+            <a href="peachy-polo/index.html" class="game-card coming-soon-card" id="card-peachy" onclick="event.preventDefault(); document.getElementById('coming-soon-modal').classList.add('active');">
                 <div class="card-shimmer"></div>
                 <div class="coming-soon-ribbon">Coming Soon</div>
                 <div class="card-icon">
@@ -121,6 +121,15 @@
                 </div>
             </div>
         </footer>
+    </div>
+
+    <!-- Coming Soon Modal -->
+    <div class="modal-overlay" id="coming-soon-modal" onclick="this.classList.remove('active');">
+        <div class="modal-content" onclick="event.stopPropagation();">
+            <h2 class="modal-title">Coming Soon</h2>
+            <p class="modal-text">This game is still in development. Check back soon!</p>
+            <button class="modal-close" onclick="document.getElementById('coming-soon-modal').classList.remove('active');">OK</button>
+        </div>
     </div>
 
     <script>
