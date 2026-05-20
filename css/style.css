@@ -1,22 +1,24 @@
 /* Corgi Carnival Hub - Styles */
 
 :root {
-    --color-bg: #1a1a2e;
-    --color-bg-light: #25274d;
-    --color-accent: #f5a623;
-    --color-accent-hover: #ffbe4a;
-    --color-text: #f0ece2;
-    --color-text-muted: #a8a4b8;
-    --color-card-bg: #2e305a;
-    --color-card-hover: #3a3c6e;
-    --color-card-border: #4a4c7e;
-    --color-jasper: #c4813a;
-    --color-archers: #5b9bd5;
-    --color-peachy: #e88fa2;
-    --font-display: 'Georgia', serif;
+    --color-bg: #0a0a12;
+    --color-bg-light: #1c2a4a;
+    --color-accent: #d4a030;
+    --color-accent-hover: #e8b840;
+    --color-gold-border: #9a7520;
+    --color-gold-border-hover: #d4a030;
+    --color-text: #f0e6c8;
+    --color-text-muted: #b8a878;
+    --color-card-bg: #1c2a4a;
+    --color-card-hover: #243558;
+    --font-display: 'Rye', 'Georgia', serif;
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --radius: 16px;
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow: 0 8px 32px rgba(212, 160, 48, 0.2);
+
+    /* Circus tent stripe colors */
+    --stripe-dark: #0c0c16;
+    --stripe-red: #3d1414;
 }
 
 * {
@@ -39,6 +41,107 @@ body {
     justify-content: center;
     min-height: 100vh;
     padding: 20px;
+    position: relative;
+
+    /* Circus tent vertical stripes */
+    background-image: repeating-linear-gradient(
+        90deg,
+        var(--stripe-dark) 0px,
+        var(--stripe-dark) 50px,
+        var(--stripe-red) 50px,
+        var(--stripe-red) 100px
+    );
+    background-size: 100px 100%;
+}
+
+/* Sparkle canvas */
+#sparkles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Searchlight effects */
+.searchlight {
+    position: fixed;
+    bottom: -60px;
+    pointer-events: none;
+    z-index: 0;
+    width: 600px;
+    height: 130vh;
+    clip-path: polygon(47% 100%, 53% 100%, 78% 0%, 22% 0%);
+}
+
+.searchlight-left {
+    left: -80px;
+    background: linear-gradient(
+        to top,
+        rgba(212, 160, 48, 0.05) 0%,
+        rgba(212, 160, 48, 0.15) 30%,
+        rgba(232, 190, 80, 0.35) 60%,
+        rgba(255, 220, 100, 0.5) 85%,
+        rgba(255, 235, 140, 0.6) 100%
+    );
+    transform-origin: 50% 100%;
+    animation: sweep-left 7s ease-in-out infinite;
+}
+
+.searchlight-right {
+    right: -80px;
+    background: linear-gradient(
+        to top,
+        rgba(212, 160, 48, 0.05) 0%,
+        rgba(212, 160, 48, 0.15) 30%,
+        rgba(232, 190, 80, 0.35) 60%,
+        rgba(255, 220, 100, 0.5) 85%,
+        rgba(255, 235, 140, 0.6) 100%
+    );
+    transform-origin: 50% 100%;
+    animation: sweep-right 9s ease-in-out infinite;
+}
+
+/* Light rig housings - wider than the beam */
+.searchlight::after {
+    content: '';
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 34px;
+    background: linear-gradient(to bottom, #4a4a4a, #1a1a1a);
+    border-radius: 8px 8px 4px 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.12);
+    border: 1px solid #555;
+}
+
+/* Small lens glow on the housing */
+.searchlight::before {
+    content: '';
+    position: absolute;
+    bottom: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 8px;
+    background: rgba(212, 160, 48, 0.4);
+    border-radius: 50%;
+    filter: blur(3px);
+    z-index: 1;
+}
+
+@keyframes sweep-left {
+    0%, 100% { transform: rotate(-12deg); }
+    50% { transform: rotate(25deg); }
+}
+
+@keyframes sweep-right {
+    0%, 100% { transform: rotate(12deg); }
+    50% { transform: rotate(-25deg); }
 }
 
 /* Container */
@@ -48,7 +151,9 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 40px;
+    gap: 24px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Header */
@@ -64,16 +169,17 @@ body {
     margin-bottom: 8px;
 }
 
-#corgi-logo {
+.hub-logo {
     display: block;
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    animation: logo-breathe 4s ease-in-out infinite;
 }
 
-.hub-title {
-    font-family: var(--font-display);
-    font-size: clamp(2rem, 6vw, 3.5rem);
-    color: var(--color-accent);
-    text-shadow: 0 2px 8px rgba(245, 166, 35, 0.3);
-    letter-spacing: 0.02em;
+@keyframes logo-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
 }
 
 .hub-tagline {
@@ -82,39 +188,82 @@ body {
     font-style: italic;
 }
 
+/* Bunting pennants */
+.bunting {
+    width: 100%;
+    max-width: 600px;
+    overflow: visible;
+}
+
+.bunting-svg {
+    width: 100%;
+    height: 40px;
+    overflow: visible;
+}
+
+.pennant {
+    transform-origin: top center;
+    animation: pennant-sway 3s ease-in-out infinite;
+}
+
+.p1 { animation-delay: 0s; }
+.p2 { animation-delay: 0.2s; }
+.p3 { animation-delay: 0.4s; }
+.p4 { animation-delay: 0.6s; }
+.p5 { animation-delay: 0.8s; }
+.p6 { animation-delay: 1.0s; }
+.p7 { animation-delay: 1.2s; }
+.p8 { animation-delay: 1.4s; }
+.p9 { animation-delay: 1.6s; }
+
+@keyframes pennant-sway {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+}
+
 /* Game Grid */
 .game-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
     width: 100%;
 }
 
-/* Game Cards */
+/* Game Cards - ticket stub shape */
 .game-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 28px 20px;
+    gap: 12px;
+    padding: 20px 16px;
     background: var(--color-card-bg);
-    border: 2px solid var(--color-card-border);
+    border: 2px solid var(--color-gold-border);
     border-radius: var(--radius);
     text-decoration: none;
     color: var(--color-text);
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
     overflow: hidden;
-    min-height: 220px;
-    /* Minimum touch target */
     min-width: 44px;
     min-height: 44px;
+    /* Ticket stub perforated edge on the left */
+    mask-image: radial-gradient(circle 5px at 0% 20%, transparent 4px, black 4.5px),
+                radial-gradient(circle 5px at 0% 40%, transparent 4px, black 4.5px),
+                radial-gradient(circle 5px at 0% 60%, transparent 4px, black 4.5px),
+                radial-gradient(circle 5px at 0% 80%, transparent 4px, black 4.5px);
+    mask-composite: intersect;
+    -webkit-mask-image: radial-gradient(circle 5px at 0% 20%, transparent 4px, black 4.5px),
+                        radial-gradient(circle 5px at 0% 40%, transparent 4px, black 4.5px),
+                        radial-gradient(circle 5px at 0% 60%, transparent 4px, black 4.5px),
+                        radial-gradient(circle 5px at 0% 80%, transparent 4px, black 4.5px);
+    -webkit-mask-composite: source-in;
 }
 
 .game-card:hover,
 .game-card:focus-visible {
     transform: translateY(-4px);
     box-shadow: var(--shadow);
+    border-color: var(--color-gold-border-hover);
 }
 
 .game-card:focus-visible {
@@ -122,19 +271,49 @@ body {
     outline-offset: 2px;
 }
 
-#card-jasper:hover,
-#card-jasper:focus-visible {
-    border-color: var(--color-jasper);
+/* Golden shimmer sweep on hover */
+.card-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 160, 48, 0.08) 40%,
+        rgba(212, 160, 48, 0.15) 50%,
+        rgba(212, 160, 48, 0.08) 60%,
+        transparent 100%
+    );
+    pointer-events: none;
+    transition: none;
 }
 
-#card-archers:hover,
-#card-archers:focus-visible {
-    border-color: var(--color-archers);
+.game-card:hover .card-shimmer {
+    animation: shimmer-sweep 0.8s ease forwards;
 }
 
-#card-peachy:hover,
-#card-peachy:focus-visible {
-    border-color: var(--color-peachy);
+@keyframes shimmer-sweep {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Coming Soon ribbon */
+.coming-soon-ribbon {
+    position: absolute;
+    top: 14px;
+    right: -32px;
+    background: var(--color-accent);
+    color: #1a1a2e;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 36px;
+    transform: rotate(35deg);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 2;
 }
 
 .card-icon {
@@ -143,40 +322,32 @@ body {
     justify-content: center;
 }
 
-.card-canvas {
+.card-thumb {
     display: block;
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 8px;
 }
 
 .card-content {
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .card-title {
     font-family: var(--font-display);
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
+    color: var(--color-accent);
 }
 
 .card-tagline {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--color-text-muted);
     line-height: 1.4;
-}
-
-.card-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(255, 255, 255, 0.08);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-muted);
 }
 
 /* Footer */
@@ -184,21 +355,116 @@ body {
     text-align: center;
     color: var(--color-text-muted);
     font-size: 0.8rem;
-    padding-top: 20px;
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-copyright {
+    margin: 0;
+}
+
+.footer-copyright a {
+    color: var(--color-accent);
+    text-decoration: none;
+    opacity: 0.85;
+}
+
+.footer-copyright a:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+.tip-jar-section {
+    margin-top: 4px;
+    text-align: center;
+}
+
+.tip-jar-text {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+    margin: 0 0 6px;
+}
+
+.tip-jar-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.tip-jar-btn {
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.2s;
+}
+
+.tip-jar-btn:hover {
+    transform: scale(1.08);
+}
+
+.qr-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    top: -4px;
+}
+
+#qr-code {
+    background: #fff;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+/* Sound toggle button */
+.sound-toggle {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 100;
+    background: rgba(28, 42, 74, 0.9);
+    border: 1px solid var(--color-gold-border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.sound-toggle:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
 }
 
 /* Responsive */
 @media (max-width: 600px) {
     .game-grid {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 14px;
     }
 
     .game-card {
         flex-direction: row;
-        padding: 20px;
-        min-height: auto;
-        gap: 16px;
+        padding: 16px;
+        gap: 12px;
+        /* Remove ticket stub on mobile for cleaner look */
+        mask-image: none;
+        -webkit-mask-image: none;
     }
 
     .card-content {
@@ -210,8 +476,28 @@ body {
         flex-shrink: 0;
     }
 
+    .card-thumb {
+        width: 60px;
+        height: 60px;
+    }
+
     .hub-container {
-        gap: 28px;
+        gap: 20px;
+    }
+
+    .hub-logo {
+        max-width: 200px;
+    }
+
+    .bunting {
+        max-width: 100%;
+    }
+
+    .coming-soon-ribbon {
+        font-size: 0.5rem;
+        padding: 3px 28px;
+        top: 10px;
+        right: -28px;
     }
 }
 
@@ -229,7 +515,7 @@ body {
     }
 
     .hub-container {
-        gap: 16px;
+        gap: 12px;
     }
 
     .hub-header {
@@ -240,9 +526,12 @@ body {
         margin-bottom: 0;
     }
 
-    #corgi-logo {
-        width: 80px;
-        height: 60px;
+    .hub-logo {
+        max-width: 150px;
+    }
+
+    .bunting {
+        display: none;
     }
 
     .game-grid {
@@ -251,8 +540,14 @@ body {
     }
 
     .game-card {
-        padding: 16px 12px;
+        padding: 12px 10px;
         gap: 8px;
-        min-height: auto;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+
+    .card-thumb {
+        width: 50px;
+        height: 50px;
     }
 }
