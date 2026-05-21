@@ -11,8 +11,6 @@ JJ.Scenes = {};
 JJ.Scenes.MainMenu = function () {
     let bgImage = null;
     let bgLoaded = false;
-    let idleTimer = 0;
-    const ATTRACT_DELAY = 15; // seconds before attract mode starts
 
     // Load menu background
     bgImage = new Image();
@@ -32,12 +30,10 @@ JJ.Scenes.MainMenu = function () {
     }
 
     function onTutorialClick() {
-        idleTimer = 0;
         executeMenuAction('tutorial');
     }
 
     function onNewGameClick() {
-        idleTimer = 0;
         executeMenuAction('newgame');
     }
 
@@ -49,28 +45,15 @@ JJ.Scenes.MainMenu = function () {
             const btnNewGame = document.getElementById('btn-newgame');
             if (btnTutorial) btnTutorial.addEventListener('click', onTutorialClick);
             if (btnNewGame) btnNewGame.addEventListener('click', onNewGameClick);
-
-            // Reset idle timer on any interaction
-            document.addEventListener('touchstart', this._resetIdle);
-            document.addEventListener('mousemove', this._resetIdle);
         },
         onExit() {
             const btnTutorial = document.getElementById('btn-tutorial');
             const btnNewGame = document.getElementById('btn-newgame');
             if (btnTutorial) btnTutorial.removeEventListener('click', onTutorialClick);
             if (btnNewGame) btnNewGame.removeEventListener('click', onNewGameClick);
-            document.removeEventListener('touchstart', this._resetIdle);
-            document.removeEventListener('mousemove', this._resetIdle);
-        },
-        _resetIdle() {
-            idleTimer = 0;
         },
         update(dt) {
-            idleTimer += dt;
-            if (idleTimer >= ATTRACT_DELAY) {
-                idleTimer = 0;
-                JJ.Engine.pushScene(JJ.Scenes.Attract());
-            }
+            // No attract mode - it conflicts with the portrait-allowed title screen
         },
         render(ctx) {
             // Background only - logo and buttons are HTML overlay
