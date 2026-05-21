@@ -100,6 +100,8 @@ JJ.Engine = (function () {
             pauseGame();
         } else {
             prompt.style.display = 'none';
+            // Resume if we were paused by the orientation prompt
+            if (paused) resumeGame();
         }
     }
 
