@@ -550,7 +550,8 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
     function getButtonRect(i) {
         const bw = 300, bh = 56;
         const x = JJ.CANVAS_WIDTH / 2 - bw / 2;
-        const y = 560 + i * 72;
+        const baseY = (result && result.timedOut) ? 610 : 560;
+        const y = baseY + i * 72;
         return { x, y, w: bw, h: bh };
     }
 
