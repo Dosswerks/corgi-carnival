@@ -23,9 +23,9 @@
         if (!overlay) return;
         const scene = JJ.Engine.currentScene();
         if (scene && scene.name === 'mainmenu') {
-            overlay.style.display = 'block';
+            overlay.classList.add('active');
         } else {
-            overlay.style.display = 'none';
+            overlay.classList.remove('active');
         }
         // Re-check orientation (only enforced outside title screen)
         if (JJ.Engine.checkOrientation) JJ.Engine.checkOrientation();

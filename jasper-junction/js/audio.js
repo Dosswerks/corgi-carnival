@@ -68,43 +68,76 @@ JJ.Audio = (function () {
     let originalMusicVolume = 0.4;
 
     function init() {
-        // Try to create AudioContext immediately
+        // Try to create AudioContext immediately (will be suspended on iOS)
         tryCreateContext();
 
-        // Also try on any user interaction (for browsers that block without gesture)
-        // iOS Safari specifically needs touchend for reliable audio unlock
-        document.addEventListener('touchstart', tryCreateContext);
-        document.addEventListener('touchend', tryCreateContext);
-        document.addEventListener('mousedown', tryCreateContext);
-        document.addEventListener('keydown', tryCreateContext);
+        // iOS Safari requires audio unlock on a user gesture (touchend is most reliable).
+        // We keep listeners for multiple events to cover all browsers.
+        const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+        unlockEvents.forEach(evt => document.addEventListener(evt, unlockAudio, { once: false, passive: evt !== 'touchstart' }));
     }
 
     let pendingMusic = false;
     let pendingAmbient = false;
+    let unlockListenersRemoved = false;
+
+    function unlockAudio() {
+        // If already fully initialized, just clean up listeners
+        if (initialized) {
+            removeUnlockListeners();
+            return;
+        }
+
+        // Create context if not yet created
+        if (!audioCtx) {
+            tryCreateContext();
+        }
+
+        if (!audioCtx) return;
+
+        // iOS Safari: resume() must be called inside a user gesture handler.
+        // Additionally, playing a silent buffer is the most reliable way to
+        // permanently unlock the audio context on iOS 15+.
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => {
+                playSilentBuffer();
+                finishInit();
+            }).catch(e => {
+                console.warn('AudioContext resume failed:', e);
+            });
+        } else {
+            playSilentBuffer();
+            finishInit();
+        }
+    }
+
+    function playSilentBuffer() {
+        // Playing a tiny silent buffer is the most reliable iOS audio unlock trick.
+        // Without this, some iOS versions keep the context "running" but won't
+        // actually output audio until a buffer has been played during a gesture.
+        if (!audioCtx) return;
+        try {
+            const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+            const source = audioCtx.createBufferSource();
+            source.buffer = silentBuffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+        } catch (e) {
+            // Non-critical, some browsers may not need this
+        }
+    }
+
+    function removeUnlockListeners() {
+        if (unlockListenersRemoved) return;
+        unlockListenersRemoved = true;
+        const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+        unlockEvents.forEach(evt => document.removeEventListener(evt, unlockAudio));
+    }
 
     function tryCreateContext() {
-        if (initialized) return;
+        if (audioCtx) return;
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-            // Resume if suspended (iOS Safari / Chrome autoplay policy)
-            // Must await the promise for iOS to actually unlock audio
-            const resumePromise = audioCtx.resume();
-            if (resumePromise && resumePromise.then) {
-                resumePromise.then(() => {
-                    finishInit();
-                }).catch(e => {
-                    console.warn('AudioContext resume failed:', e);
-                });
-            } else {
-                finishInit();
-            }
-
-            // Clean up listeners immediately to avoid re-entry
-            document.removeEventListener('touchstart', tryCreateContext);
-            document.removeEventListener('touchend', tryCreateContext);
-            document.removeEventListener('mousedown', tryCreateContext);
-            document.removeEventListener('keydown', tryCreateContext);
         } catch (e) {
             console.warn('Audio initialization failed:', e);
         }
@@ -129,6 +162,7 @@ JJ.Audio = (function () {
         sfxGain.gain.value = volumes.sfx;
 
         initialized = true;
+        removeUnlockListeners();
         loadSFX();
 
         // Retry music/ambient if gameplay already requested them

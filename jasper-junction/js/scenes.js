@@ -9,171 +9,15 @@ JJ.Scenes = {};
 
 // === MAIN MENU ===
 JJ.Scenes.MainMenu = function () {
-    const buttons = [
-        { label: 'Tutorial', action: 'tutorial' },
-        { label: 'New Game', action: 'newgame' },
-    ];
-    let logoImage = null;
-    let logoLoaded = false;
     let bgImage = null;
     let bgLoaded = false;
-    let activeButton = -1; // For hover/tap visual feedback
     let idleTimer = 0;
     const ATTRACT_DELAY = 15; // seconds before attract mode starts
-
-    // Load logo
-    logoImage = new Image();
-    logoImage.onload = function () { logoLoaded = true; };
-    logoImage.src = 'assets/jasper-junction-logo.png';
 
     // Load menu background
     bgImage = new Image();
     bgImage.onload = function () { bgLoaded = true; };
     bgImage.src = 'assets/jasper-junction-menu-bg.jpg';
-
-    function getButtonRect(i) {
-        const bw = 260, bh = 52;
-        const x = JJ.CANVAS_WIDTH / 2 - bw / 2;
-        const y = 440 + i * 68;
-        return { x, y, w: bw, h: bh };
-    }
-
-    return {
-        name: 'mainmenu',
-        onEnter() {
-            const canvas = JJ.Engine.getCanvas();
-            canvas.addEventListener('click', this._onClick);
-            canvas.addEventListener('touchstart', this._onTouchStart);
-            canvas.addEventListener('touchend', this._onTouchEnd);
-            canvas.addEventListener('mousemove', this._onMouseMove);
-            canvas.addEventListener('mouseleave', this._onMouseLeave);
-        },
-        onExit() {
-            const canvas = JJ.Engine.getCanvas();
-            canvas.removeEventListener('click', this._onClick);
-            canvas.removeEventListener('touchstart', this._onTouchStart);
-            canvas.removeEventListener('touchend', this._onTouchEnd);
-            canvas.removeEventListener('mousemove', this._onMouseMove);
-            canvas.removeEventListener('mouseleave', this._onMouseLeave);
-        },
-        _onClick(e) {
-            idleTimer = 0;
-            handleMenuClick(e.clientX, e.clientY);
-        },
-        _onTouchStart(e) {
-            e.preventDefault();
-            idleTimer = 0;
-            const t = e.touches[0];
-            const pos = getCanonicalPos(t.clientX, t.clientY);
-            activeButton = getButtonAt(pos.x, pos.y);
-        },
-        _onTouchEnd(e) {
-            e.preventDefault();
-            idleTimer = 0;
-            if (activeButton >= 0) {
-                executeMenuAction(buttons[activeButton].action);
-            }
-            activeButton = -1;
-        },
-        _onMouseMove(e) {
-            const pos = getCanonicalPos(e.clientX, e.clientY);
-            activeButton = getButtonAt(pos.x, pos.y);
-            idleTimer = 0;
-        },
-        _onMouseLeave() {
-            activeButton = -1;
-        },
-        update(dt) {
-            idleTimer += dt;
-            if (idleTimer >= ATTRACT_DELAY) {
-                idleTimer = 0;
-                JJ.Engine.pushScene(JJ.Scenes.Attract());
-            }
-        },
-        render(ctx) {
-            // Background
-            if (bgLoaded) {
-                ctx.drawImage(bgImage, 0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
-            } else {
-                ctx.fillStyle = '#1a2a1a';
-                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
-            }
-
-            // Logo image
-            if (logoLoaded) {
-                const logoH = 320;
-                const logoW = logoH * (logoImage.width / logoImage.height);
-                const logoX = JJ.CANVAS_WIDTH / 2 - logoW / 2;
-                const logoY = 50;
-                ctx.drawImage(logoImage, logoX, logoY, logoW, logoH);
-            } else {
-                ctx.fillStyle = '#f5a623';
-                ctx.font = 'bold 64px Georgia, serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('Jasper Junction', JJ.CANVAS_WIDTH / 2, 200);
-            }
-
-            // Buttons with hover/active states
-            buttons.forEach((btn, i) => {
-                const r = getButtonRect(i);
-                const isActive = (i === activeButton);
-
-                if (isActive) {
-                    ctx.fillStyle = 'rgba(70, 68, 65, 0.95)';
-                    ctx.shadowColor = 'rgba(160, 155, 148, 0.3)';
-                    ctx.shadowBlur = 10;
-                } else {
-                    ctx.fillStyle = 'rgba(50, 48, 45, 0.9)';
-                }
-
-                ctx.beginPath();
-                ctx.roundRect(r.x, r.y, r.w, r.h, 8);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                ctx.strokeStyle = isActive ? '#908a82' : '#6a6560';
-                ctx.lineWidth = isActive ? 3 : 2;
-                ctx.stroke();
-
-                ctx.fillStyle = '#e0dbd4';
-                ctx.font = 'bold 20px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 7);
-            });
-
-            // Footer handled by HTML overlay (#title-overlay)
-        },
-    };
-
-    function getCanonicalPos(clientX, clientY) {
-        const scale = JJ.Engine.getScale();
-        const canvas = JJ.Engine.getCanvas();
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: (clientX - rect.left) / scale,
-            y: (clientY - rect.top) / scale,
-        };
-    }
-
-    function getButtonAt(cx, cy) {
-        for (let i = 0; i < buttons.length; i++) {
-            const r = getButtonRect(i);
-            if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    function handleMenuClick(clientX, clientY) {
-        const pos = getCanonicalPos(clientX, clientY);
-        const idx = getButtonAt(pos.x, pos.y);
-        if (idx >= 0) {
-            executeMenuAction(buttons[idx].action);
-        }
-    }
 
     function executeMenuAction(action) {
         const save = JJ.Save.getData();
@@ -186,6 +30,60 @@ JJ.Scenes.MainMenu = function () {
                 break;
         }
     }
+
+    function onTutorialClick() {
+        idleTimer = 0;
+        executeMenuAction('tutorial');
+    }
+
+    function onNewGameClick() {
+        idleTimer = 0;
+        executeMenuAction('newgame');
+    }
+
+    return {
+        name: 'mainmenu',
+        onEnter() {
+            // Wire up HTML buttons
+            const btnTutorial = document.getElementById('btn-tutorial');
+            const btnNewGame = document.getElementById('btn-newgame');
+            if (btnTutorial) btnTutorial.addEventListener('click', onTutorialClick);
+            if (btnNewGame) btnNewGame.addEventListener('click', onNewGameClick);
+
+            // Reset idle timer on any interaction
+            document.addEventListener('touchstart', this._resetIdle);
+            document.addEventListener('mousemove', this._resetIdle);
+        },
+        onExit() {
+            const btnTutorial = document.getElementById('btn-tutorial');
+            const btnNewGame = document.getElementById('btn-newgame');
+            if (btnTutorial) btnTutorial.removeEventListener('click', onTutorialClick);
+            if (btnNewGame) btnNewGame.removeEventListener('click', onNewGameClick);
+            document.removeEventListener('touchstart', this._resetIdle);
+            document.removeEventListener('mousemove', this._resetIdle);
+        },
+        _resetIdle() {
+            idleTimer = 0;
+        },
+        update(dt) {
+            idleTimer += dt;
+            if (idleTimer >= ATTRACT_DELAY) {
+                idleTimer = 0;
+                JJ.Engine.pushScene(JJ.Scenes.Attract());
+            }
+        },
+        render(ctx) {
+            // Background only - logo and buttons are HTML overlay
+            if (bgLoaded) {
+                ctx.drawImage(bgImage, 0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            } else {
+                ctx.fillStyle = '#1a2a1a';
+                ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
+            }
+        },
+    };
 };
 
 
