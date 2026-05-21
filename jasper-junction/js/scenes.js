@@ -409,10 +409,8 @@ JJ.Scenes.Gameplay = function (levelNumber) {
 
             JJ.Render.renderScene(ctx, gameState);
 
-            // HUD (not during tutorial intro)
-            if (levelNumber !== 0 || tutorialStep > 0) {
-                JJ.UI.drawHUD(ctx, gameState);
-            }
+            // HUD - always show during gameplay (bark button needed for tutorial step 2)
+            JJ.UI.drawHUD(ctx, gameState);
 
             // Tutorial prompts
             if (levelNumber === 0 && tutorialStep < 3) {
