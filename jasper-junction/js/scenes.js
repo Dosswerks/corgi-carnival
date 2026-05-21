@@ -83,9 +83,9 @@ JJ.Scenes.Gameplay = function (levelNumber) {
     let totalCounts = { sheep: 0, cow: 0, goat: 0 };
     let tutorialStep = 0; // For tutorial: 0=move, 1=herd, 2=bark, 3=done
     let tutorialPrompts = [
-        'Tap anywhere to move Jasper',
+        'Arrow keys or WASD to move · On mobile, tap anywhere to move Jasper',
         'Get close to sheep to push them toward the pen',
-        'Double-tap or press Space to bark (doubles your range!)',
+        'Press Space to bark (or double-tap on mobile) · Doubles your herding range!',
         '',
     ];
     let hasMovedOnce = false;
@@ -416,12 +416,12 @@ JJ.Scenes.Gameplay = function (levelNumber) {
             if (levelNumber === 0 && tutorialStep < 3) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.beginPath();
-                ctx.roundRect(JJ.CANVAS_WIDTH / 2 - 250, JJ.CANVAS_HEIGHT - 100, 500, 50, 10);
+                ctx.roundRect(JJ.CANVAS_WIDTH / 2 - 350, JJ.CANVAS_HEIGHT - 100, 700, 50, 10);
                 ctx.fill();
                 ctx.fillStyle = '#fff';
-                ctx.font = '20px sans-serif';
+                ctx.font = '18px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(tutorialPrompts[tutorialStep], JJ.CANVAS_WIDTH / 2, JJ.CANVAS_HEIGHT - 68);
+                ctx.fillText(tutorialPrompts[tutorialStep], JJ.CANVAS_WIDTH / 2, JJ.CANVAS_HEIGHT - 70);
             }
         },
 
@@ -528,38 +528,30 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
     bgImage.onload = function () { bgLoaded = true; };
     bgImage.src = bgSrc;
 
-    // Primary action button
-    let primaryLabel, primaryAction;
-    if (levelNumber === 0) {
-        primaryLabel = 'Start Level 1!';
-        primaryAction = 'next';
+    // Buttons setup
+    const buttons = [];
+
+    if (result && result.timedOut) {
+        // Time's Up screen: Try Again + Next Level
+        buttons.push({ label: 'TRY AGAIN', action: 'replay' });
+        if (!JJ.Levels.isLastLevel(levelNumber)) {
+            buttons.push({ label: 'NEXT LEVEL', action: 'next' });
+        }
+    } else if (levelNumber === 0) {
+        // Tutorial Complete
+        buttons.push({ label: 'START LEVEL 1', action: 'next' });
     } else if (JJ.Levels.isLastLevel(levelNumber)) {
-        primaryLabel = 'Victory! Back to Menu';
-        primaryAction = 'menu';
+        buttons.push({ label: 'VICTORY! BACK TO MENU', action: 'menu' });
     } else {
-        primaryLabel = 'Next Level';
-        primaryAction = 'next';
+        // Level Complete
+        buttons.push({ label: 'NEXT LEVEL', action: 'next' });
     }
 
-    // Secondary text links (only for non-tutorial, non-final levels)
-    const links = [];
-    if (levelNumber !== 0 && !JJ.Levels.isLastLevel(levelNumber)) {
-        links.push({ label: 'Replay This Level', action: 'replay' });
-        links.push({ label: 'Quit to Main Menu', action: 'menu' });
-    }
-
-    function getPrimaryButtonRect() {
-        const bw = 280, bh = 56;
+    function getButtonRect(i) {
+        const bw = 300, bh = 56;
         const x = JJ.CANVAS_WIDTH / 2 - bw / 2;
-        const y = 660;
+        const y = 560 + i * 72;
         return { x, y, w: bw, h: bh };
-    }
-
-    function getLinkRect(i) {
-        const lw = 220, lh = 30;
-        const x = JJ.CANVAS_WIDTH / 2 - lw / 2;
-        const y = 740 + i * 40;
-        return { x, y, w: lw, h: lh };
     }
 
     return {
@@ -595,7 +587,7 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
                 ctx.fillRect(0, 0, JJ.CANVAS_WIDTH, JJ.CANVAS_HEIGHT);
             }
 
-            // Title
+            // Title (moved up 30px)
             let title;
             if (levelNumber === 0) {
                 title = 'Tutorial Complete!';
@@ -609,19 +601,19 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
             ctx.fillStyle = (result && result.timedOut) ? '#e74c3c' : '#f5a623';
             ctx.font = 'bold 48px Georgia, serif';
             ctx.textAlign = 'center';
-            ctx.fillText(title, JJ.CANVAS_WIDTH / 2, 200);
+            ctx.fillText(title, JJ.CANVAS_WIDTH / 2, 170);
 
             if (result) {
-                // Stars
+                // Stars (moved up 30px)
                 const starStr = '★'.repeat(result.stars) + '☆'.repeat(3 - result.stars);
                 ctx.fillStyle = '#FFD700';
                 ctx.font = '60px sans-serif';
-                ctx.fillText(starStr, JJ.CANVAS_WIDTH / 2, 300);
+                ctx.fillText(starStr, JJ.CANVAS_WIDTH / 2, 270);
 
-                // Score breakdown
+                // Score breakdown (moved up 30px)
                 ctx.fillStyle = '#fff';
                 ctx.font = '22px sans-serif';
-                let y = 380;
+                let y = 350;
                 ctx.fillText('Sheep: ' + result.sheepPoints + ' pts', JJ.CANVAS_WIDTH / 2, y); y += 36;
                 ctx.fillText('Cows: ' + result.cowPoints + ' pts', JJ.CANVAS_WIDTH / 2, y); y += 36;
                 ctx.fillText('Goats: ' + result.goatPoints + ' pts', JJ.CANVAS_WIDTH / 2, y); y += 36;
@@ -635,37 +627,20 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
                 ctx.fillText('Total: ' + result.totalScore, JJ.CANVAS_WIDTH / 2, y + 20);
             }
 
-            // Primary button (centered, prominent)
-            const pr = getPrimaryButtonRect();
-            ctx.fillStyle = 'rgba(55, 52, 48, 0.95)';
-            ctx.beginPath();
-            ctx.roundRect(pr.x, pr.y, pr.w, pr.h, 10);
-            ctx.fill();
-            ctx.strokeStyle = '#7a7570';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            ctx.fillStyle = '#e0dbd4';
-            ctx.font = 'bold 24px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(primaryLabel, pr.x + pr.w / 2, pr.y + pr.h / 2 + 8);
-
-            // Secondary text links
-            links.forEach((link, i) => {
-                const lr = getLinkRect(i);
-                ctx.fillStyle = '#aaa';
-                ctx.font = '18px sans-serif';
-                ctx.textAlign = 'center';
-                const textX = lr.x + lr.w / 2;
-                const textY = lr.y + lr.h / 2 + 6;
-                ctx.fillText(link.label, textX, textY);
-                // Underline
-                const textWidth = ctx.measureText(link.label).width;
-                ctx.strokeStyle = '#888';
-                ctx.lineWidth = 1;
+            // Buttons (all caps, Rye font)
+            buttons.forEach((btn, i) => {
+                const r = getButtonRect(i);
+                ctx.fillStyle = 'rgba(55, 52, 48, 0.95)';
                 ctx.beginPath();
-                ctx.moveTo(textX - textWidth / 2, textY + 3);
-                ctx.lineTo(textX + textWidth / 2, textY + 3);
+                ctx.roundRect(r.x, r.y, r.w, r.h, 10);
+                ctx.fill();
+                ctx.strokeStyle = '#7a7570';
+                ctx.lineWidth = 3;
                 ctx.stroke();
+                ctx.fillStyle = '#e0dbd4';
+                ctx.font = 'bold 22px Rye, Georgia, serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(btn.label, r.x + r.w / 2, r.y + r.h / 2 + 8);
             });
         },
     };
@@ -677,18 +652,11 @@ JJ.Scenes.LevelEnd = function (levelNumber, result) {
         const cx = (clientX - rect.left) / scale;
         const cy = (clientY - rect.top) / scale;
 
-        // Check primary button
-        const pr = getPrimaryButtonRect();
-        if (cx >= pr.x && cx <= pr.x + pr.w && cy >= pr.y && cy <= pr.y + pr.h) {
-            executeAction(primaryAction);
-            return;
-        }
-
-        // Check text links
-        links.forEach((link, i) => {
-            const lr = getLinkRect(i);
-            if (cx >= lr.x && cx <= lr.x + lr.w && cy >= lr.y && cy <= lr.y + lr.h) {
-                executeAction(link.action);
+        // Check buttons
+        buttons.forEach((btn, i) => {
+            const r = getButtonRect(i);
+            if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) {
+                executeAction(btn.action);
             }
         });
     }

@@ -84,6 +84,9 @@ JJ.Physics = (function () {
         // Local avoidance
         applyLocalAvoidance(activeEntities, dt);
 
+        // Wall repulsion (prevents jitter by pushing animals away before hard collision)
+        applyWallRepulsion(activeEntities);
+
         // Resolve collisions
         resolveCollisions(activeEntities);
 
@@ -209,37 +212,72 @@ JJ.Physics = (function () {
             if (allowGate) {
                 // Only constrain X, let Y pass through to gate
                 if (entity.type !== JJ.EntityType.Jasper && constrained.x !== entity.position.x) {
-                    entity.velocity.x = 0;
+                    entity.velocity.x *= -0.3; // Gentle bounce instead of hard stop
                 }
                 entity.position.x = constrained.x;
             } else {
                 if (entity.type !== JJ.EntityType.Jasper) {
-                    // Redirect along the wall instead of bouncing back
                     const hitX = constrained.x !== entity.position.x;
                     const hitY = constrained.y !== entity.position.y;
 
                     if (hitX && hitY) {
-                        // Corner: deflect toward center of field
+                        // Corner: deflect toward center of field with damping
                         const centerX = JJ.CANVAS_WIDTH / 2;
                         const centerY = JJ.CANVAS_HEIGHT / 2;
                         const toCenterX = centerX - entity.position.x;
                         const toCenterY = centerY - entity.position.y;
                         const dist = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY) || 1;
                         const speed = Math.sqrt(entity.velocity.x * entity.velocity.x + entity.velocity.y * entity.velocity.y);
-                        entity.velocity.x = (toCenterX / dist) * speed * 0.5;
-                        entity.velocity.y = (toCenterY / dist) * speed * 0.5;
+                        entity.velocity.x = (toCenterX / dist) * speed * 0.4;
+                        entity.velocity.y = (toCenterY / dist) * speed * 0.4;
                     } else if (hitX) {
-                        // Hit left/right wall: zero X velocity, keep Y momentum
-                        entity.velocity.x = 0;
+                        // Hit left/right wall: reverse X with heavy damping, reduce Y
+                        entity.velocity.x *= -0.2;
+                        entity.velocity.y *= 0.7;
                     } else if (hitY) {
-                        // Hit top/bottom wall: zero Y velocity, keep X momentum
-                        entity.velocity.y = 0;
+                        // Hit top/bottom wall: reverse Y with heavy damping, reduce X
+                        entity.velocity.y *= -0.2;
+                        entity.velocity.x *= 0.7;
                     }
                 }
                 entity.position.x = constrained.x;
                 entity.position.y = constrained.y;
             }
         }
+    }
+
+    function applyWallRepulsion(entities) {
+        // Push animals away from walls before they collide, preventing the
+        // jittery oscillation caused by AI pushing toward wall + constraint pushing back.
+        const WALL_REPULSION_DIST = 30;
+        const WALL_REPULSION_FORCE = 60;
+
+        if (!JJ.Levels) return;
+
+        entities.forEach(e => {
+            if (e.type === JJ.EntityType.Jasper) return;
+            if (e.state === JJ.AnimalState.Corralled) return;
+
+            const r = e.collisionRadius;
+            const x = e.position.x;
+            const y = e.position.y;
+
+            // Find nearest wall edges from field rects
+            const constrained = JJ.Levels.constrainToField(x, y, r + WALL_REPULSION_DIST);
+            const dx = constrained.x - x;
+            const dy = constrained.y - y;
+
+            // If constrained position differs, we're near a wall
+            if (dx !== 0) {
+                // Near left/right wall - push away proportionally
+                const pushStrength = Math.min(Math.abs(dx) / WALL_REPULSION_DIST, 1) * WALL_REPULSION_FORCE;
+                e.velocity.x += (dx > 0 ? -pushStrength : pushStrength) * -1;
+            }
+            if (dy !== 0) {
+                const pushStrength = Math.min(Math.abs(dy) / WALL_REPULSION_DIST, 1) * WALL_REPULSION_FORCE;
+                e.velocity.y += (dy > 0 ? -pushStrength : pushStrength) * -1;
+            }
+        });
     }
 
     function applyCornerEscape(entity, dt) {

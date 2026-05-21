@@ -114,9 +114,8 @@ JJ.Levels = (function () {
     // Play field bounds (where animals can roam) - multiple rectangles
     // Reduced lower extent to keep entities away from HUD (y:680) and BARK button (y:769)
     const FIELD_RECTS = [
-        { x: 174, y: 265, width: 1325, height: 289 },   // Main upper field (y: 265-554) - buffer below pen walls
-        { x: 132, y: 520, width: 1181, height: 130 },   // Lower field (y: 520-650) - stops well above HUD
-        { x: 1482, y: 420, width: 55, height: 130 },    // Right extension (capped at 550)
+        { x: 174, y: 265, width: 1325, height: 295 },   // Main upper field (y: 265-560) - buffer below pen walls
+        { x: 132, y: 520, width: 1181, height: 130 },   // Lower field (y: 520-650) - overlaps upper for smooth transition
         { x: 140, y: 350, width: 50, height: 200 },     // Left edge taper (capped at 550)
     ];
 
