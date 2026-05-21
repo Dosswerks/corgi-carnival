@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Jasper Junction</title>
+
+    <!-- iOS Web App (hides browser chrome when launched from home screen) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
 
     <!-- Open Graph / Social Sharing -->
     <meta property="og:type" content="website">
@@ -250,6 +255,10 @@
 
     <!-- Title screen HTML overlay (responsive, mobile-first) -->
     <div id="title-overlay">
+        <div id="pwa-hint" style="display:none; position:absolute; top:0; left:0; right:0; background:rgba(212,160,48,0.9); color:#1a1a1a; font-size:13px; font-family:sans-serif; padding:8px 16px; text-align:center; z-index:2;">
+            For fullscreen: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
+            <button onclick="this.parentElement.style.display='none'; localStorage.setItem('jj-pwa-dismissed','1');" style="margin-left:12px; background:none; border:1px solid #1a1a1a; border-radius:4px; padding:2px 8px; font-size:12px; cursor:pointer;">✕</button>
+        </div>
         <div class="title-container">
             <img src="assets/jasper-junction-logo.png" alt="Jasper Junction" class="title-logo" width="280" height="280">
             <div class="title-buttons">
@@ -302,5 +311,17 @@
     <script src="js/ui.js"></script>
     <script src="js/scenes.js"></script>
     <script src="js/main.js"></script>
+    <script>
+    // Show "Add to Home Screen" hint on iOS mobile (not in standalone mode)
+    (function() {
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        var dismissed = localStorage.getItem('jj-pwa-dismissed');
+        if (isIOS && !isStandalone && !dismissed) {
+            var hint = document.getElementById('pwa-hint');
+            if (hint) hint.style.display = 'block';
+        }
+    })();
+    </script>
 </body>
 </html>
