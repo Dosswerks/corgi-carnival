@@ -68,13 +68,12 @@ JJ.Audio = (function () {
     let originalMusicVolume = 0.4;
 
     function init() {
-        // Try to create AudioContext immediately (will be suspended on iOS)
-        tryCreateContext();
-
-        // iOS Safari requires audio unlock on a user gesture (touchend is most reliable).
-        // We keep listeners for multiple events to cover all browsers.
-        const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown'];
-        unlockEvents.forEach(evt => document.addEventListener(evt, unlockAudio, { once: false, passive: evt !== 'touchstart' }));
+        // iOS Safari requires audio to be unlocked during a user gesture.
+        // We listen on multiple events; touchend is the most reliable on iOS.
+        const unlockEvents = ['touchstart', 'touchend', 'click', 'mousedown', 'keydown'];
+        unlockEvents.forEach(evt => {
+            document.addEventListener(evt, unlockAudio, { capture: true });
+        });
     }
 
     let pendingMusic = false;
@@ -88,33 +87,34 @@ JJ.Audio = (function () {
             return;
         }
 
-        // Create context if not yet created
+        // Create context if not yet created — must happen inside gesture
         if (!audioCtx) {
-            tryCreateContext();
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.warn('Audio initialization failed:', e);
+                return;
+            }
         }
 
-        if (!audioCtx) return;
-
-        // iOS Safari: resume() must be called inside a user gesture handler.
-        // Additionally, playing a silent buffer is the most reliable way to
-        // permanently unlock the audio context on iOS 15+.
+        // Resume the context (required for iOS). We call resume() but don't
+        // wait for the promise — iOS unlocks the context synchronously when
+        // resume() is called inside a user gesture, even though the promise
+        // resolves asynchronously.
         if (audioCtx.state === 'suspended') {
-            audioCtx.resume().then(() => {
-                playSilentBuffer();
-                finishInit();
-            }).catch(e => {
-                console.warn('AudioContext resume failed:', e);
-            });
-        } else {
-            playSilentBuffer();
-            finishInit();
+            audioCtx.resume();
         }
+
+        // Play a silent buffer immediately (synchronously within the gesture).
+        // This is the most reliable iOS audio unlock technique — it forces the
+        // hardware audio session to activate.
+        playSilentBuffer();
+
+        // Set up gain nodes and mark as initialized
+        finishInit();
     }
 
     function playSilentBuffer() {
-        // Playing a tiny silent buffer is the most reliable iOS audio unlock trick.
-        // Without this, some iOS versions keep the context "running" but won't
-        // actually output audio until a buffer has been played during a gesture.
         if (!audioCtx) return;
         try {
             const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
@@ -123,24 +123,17 @@ JJ.Audio = (function () {
             source.connect(audioCtx.destination);
             source.start(0);
         } catch (e) {
-            // Non-critical, some browsers may not need this
+            // Non-critical
         }
     }
 
     function removeUnlockListeners() {
         if (unlockListenersRemoved) return;
         unlockListenersRemoved = true;
-        const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown'];
-        unlockEvents.forEach(evt => document.removeEventListener(evt, unlockAudio));
-    }
-
-    function tryCreateContext() {
-        if (audioCtx) return;
-        try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            console.warn('Audio initialization failed:', e);
-        }
+        const unlockEvents = ['touchstart', 'touchend', 'click', 'mousedown', 'keydown'];
+        unlockEvents.forEach(evt => {
+            document.removeEventListener(evt, unlockAudio, { capture: true });
+        });
     }
 
     function finishInit() {
