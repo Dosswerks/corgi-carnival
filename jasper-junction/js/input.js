@@ -43,11 +43,12 @@ JJ.Input = (function () {
 
     function deviceToCanonical(clientX, clientY) {
         const scale = JJ.Engine.getScale();
-        const offset = JJ.Engine.getOffset();
         const rect = canvas.getBoundingClientRect();
 
-        const x = (clientX - rect.left - offset.x) / scale;
-        const y = (clientY - rect.top - offset.y) / scale;
+        // rect.left/top already accounts for canvas positioning (centering),
+        // so we only need to subtract rect origin and divide by scale.
+        const x = (clientX - rect.left) / scale;
+        const y = (clientY - rect.top) / scale;
 
         return { x, y };
     }
