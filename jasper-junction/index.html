@@ -50,27 +50,176 @@
         #orientation-prompt .rotate-icon {
             font-size: 3rem;
         }
+
+        /* ===== TITLE SCREEN HTML OVERLAY ===== */
+        #title-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 50;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.45);
+        }
+        #title-overlay.active {
+            display: flex;
+        }
+
+        .title-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .title-logo {
+            display: block;
+            max-width: 280px;
+            width: 80%;
+            height: auto;
+            animation: logo-breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes logo-breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .title-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .title-btn {
+            display: block;
+            width: 100%;
+            padding: 14px 24px;
+            background: rgba(50, 48, 45, 0.92);
+            border: 2px solid #6a6560;
+            border-radius: 10px;
+            color: #e0dbd4;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 48px;
+        }
+
+        .title-btn:hover,
+        .title-btn:active {
+            background: rgba(70, 68, 65, 0.95);
+            border-color: #908a82;
+            transform: scale(1.03);
+        }
+
+        #title-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 12px 20px;
+            text-align: center;
+        }
+
+        #title-footer p {
+            margin: 0 0 4px;
+            color: #888;
+            font-size: 13px;
+            font-family: sans-serif;
+        }
+
+        #title-footer a {
+            color: #f5a623;
+            text-decoration: none;
+        }
+
+        .tip-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .tip-btn {
+            padding: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: transform 0.2s;
+        }
+
+        .tip-btn:hover {
+            transform: scale(1.08);
+        }
+
+        #qr-code {
+            background: #fff;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        /* Mobile-first responsive adjustments */
+        @media (max-width: 480px) {
+            .title-logo {
+                max-width: 200px;
+            }
+            .title-buttons {
+                max-width: 240px;
+            }
+            .title-btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+
         /* On mobile landscape, shrink the title footer to avoid covering game buttons */
         @media (max-height: 500px) and (orientation: landscape) {
             #title-footer {
-                padding: 6px 12px !important;
+                padding: 6px 12px;
             }
             #title-footer p {
-                font-size: 11px !important;
-                margin-bottom: 2px !important;
+                font-size: 11px;
+                margin-bottom: 2px;
             }
-            #title-footer form button svg {
-                width: 36px !important;
-                height: 45px !important;
+            #title-footer .tip-btn svg {
+                width: 36px;
+                height: 45px;
             }
             #qr-code {
-                display: none !important;
+                display: none;
+            }
+            .title-logo {
+                max-width: 160px;
+            }
+            .title-container {
+                gap: 10px;
+            }
+            .title-btn {
+                padding: 10px 18px;
+                font-size: 0.95rem;
             }
         }
         /* On very short screens, hide footer entirely to prevent overlap */
         @media (max-height: 380px) {
             #title-footer {
-                display: none !important;
+                display: none;
             }
         }
     </style>
@@ -82,15 +231,22 @@
         <p>Please rotate your device to landscape</p>
     </div>
 
-    <!-- Title screen HTML overlay (for clickable tip jar + scannable QR) -->
-    <div id="title-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:50; pointer-events:none;">
-        <div id="title-footer" style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); padding:12px 20px; text-align:center; pointer-events:auto;">
-            <p style="margin:0 0 4px; color:#888; font-size:13px; font-family:sans-serif;">&copy; 2026 <a href="https://andrewdoss.com" target="_blank" rel="noopener noreferrer" style="color:#f5a623; text-decoration:none;">Andrew Doss</a></p>
-            <p style="margin:0 0 8px; color:#aaa; font-size:13px; font-family:sans-serif;">Enjoying the game? Tips help keep the games coming!</p>
-            <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+    <!-- Title screen HTML overlay (responsive, mobile-first) -->
+    <div id="title-overlay">
+        <div class="title-container">
+            <img src="assets/jasper-junction-logo.png" alt="Jasper Junction" class="title-logo" width="280" height="280">
+            <div class="title-buttons">
+                <button class="title-btn" id="btn-tutorial">Tutorial</button>
+                <button class="title-btn" id="btn-newgame">New Game</button>
+            </div>
+        </div>
+        <div id="title-footer">
+            <p>&copy; 2026 <a href="https://andrewdoss.com" target="_blank" rel="noopener noreferrer">Andrew Doss</a></p>
+            <p style="color:#aaa; font-size:13px;">Enjoying the game? Tips help keep the games coming!</p>
+            <div class="tip-row">
                 <form action="https://www.paypal.com/donate" method="post" target="_blank">
                     <input type="hidden" name="hosted_button_id" value="HDD77QKGC6XXN">
-                    <button type="submit" style="padding:0; background:none; border:none; cursor:pointer; display:inline-flex; flex-direction:column; align-items:center; gap:4px; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                    <button type="submit" class="tip-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="60" height="75" viewBox="0 0 80 100" fill="none">
                             <rect x="16" y="8" width="48" height="8" rx="2" fill="#aaa"/>
                             <rect x="34" y="2" width="12" height="8" rx="2" fill="#999"/>
@@ -108,7 +264,7 @@
                     </button>
                 </form>
                 <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                    <div id="qr-code" style="background:#fff; padding:4px; border-radius:4px;"></div>
+                    <div id="qr-code"></div>
                 </div>
             </div>
         </div>
