@@ -1,6 +1,8 @@
 /**
  * Jasper Junction - Audio Manager
  * Web Audio API with SFX limiting, ducking, and volume management.
+ * iOS compatibility: uses HTML5 Audio element to establish playback session
+ * (overrides silent/mute switch), then Web Audio API for mixing.
  */
 
 'use strict';
@@ -67,9 +69,22 @@ JJ.Audio = (function () {
     let duckTimer = null;
     let originalMusicVolume = 0.4;
 
+    // HTML5 Audio element used to establish iOS audio session.
+    // Playing any audio via <audio> element sets the session category to
+    // "playback" which overrides the hardware mute/silent switch.
+    let sessionAudio = null;
+
     function init() {
-        // iOS Safari requires audio to be unlocked during a user gesture.
-        // We listen on multiple events; touchend is the most reliable on iOS.
+        // Create a tiny silent audio element for iOS session unlock.
+        // This must exist before the first user gesture.
+        sessionAudio = document.createElement('audio');
+        sessionAudio.setAttribute('playsinline', '');
+        sessionAudio.setAttribute('webkit-playsinline', '');
+        // Tiny silent MP3 (base64) — 0.1s of silence, ~200 bytes
+        sessionAudio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwMHAAAAAAD/+1DEAAAH+ANoAAAAACIYA1gAAAATAAANIAAAAQAAADSAAAAEMcnBgAAAgAABDHJwYAAAAAAA//tQxBcAAADSAAAAAAAAANIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        sessionAudio.load();
+
+        // Listen for user gestures to unlock audio
         const unlockEvents = ['touchstart', 'touchend', 'click', 'mousedown', 'keydown'];
         unlockEvents.forEach(evt => {
             document.addEventListener(evt, unlockAudio, { capture: true });
@@ -87,7 +102,18 @@ JJ.Audio = (function () {
             return;
         }
 
-        // Create context if not yet created — must happen inside gesture
+        // Step 1: Play the HTML5 audio element to establish iOS audio session.
+        // This overrides the hardware mute switch.
+        if (sessionAudio) {
+            try {
+                var playPromise = sessionAudio.play();
+                if (playPromise) {
+                    playPromise.catch(function() {});
+                }
+            } catch (e) {}
+        }
+
+        // Step 2: Create Web Audio context if not yet created
         if (!audioCtx) {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -97,41 +123,34 @@ JJ.Audio = (function () {
             }
         }
 
-        // Resume the context (required for iOS). We call resume() but don't
-        // wait for the promise — iOS unlocks the context synchronously when
-        // resume() is called inside a user gesture, even though the promise
-        // resolves asynchronously.
+        // Step 3: Resume the context (required for iOS/Chrome autoplay policy)
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
 
-        // Play a silent buffer immediately (synchronously within the gesture).
-        // This is the most reliable iOS audio unlock technique — it forces the
-        // hardware audio session to activate.
+        // Step 4: Play a silent buffer through Web Audio API to fully unlock it
         playSilentBuffer();
 
-        // Set up gain nodes and mark as initialized
+        // Step 5: Set up gain nodes and mark as initialized
         finishInit();
     }
 
     function playSilentBuffer() {
         if (!audioCtx) return;
         try {
-            const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
-            const source = audioCtx.createBufferSource();
+            var silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+            var source = audioCtx.createBufferSource();
             source.buffer = silentBuffer;
             source.connect(audioCtx.destination);
             source.start(0);
-        } catch (e) {
-            // Non-critical
-        }
+        } catch (e) {}
     }
 
     function removeUnlockListeners() {
         if (unlockListenersRemoved) return;
         unlockListenersRemoved = true;
-        const unlockEvents = ['touchstart', 'touchend', 'click', 'mousedown', 'keydown'];
-        unlockEvents.forEach(evt => {
+        var unlockEvents = ['touchstart', 'touchend', 'click', 'mousedown', 'keydown'];
+        unlockEvents.forEach(function(evt) {
             document.removeEventListener(evt, unlockAudio, { capture: true });
         });
     }
@@ -166,6 +185,9 @@ JJ.Audio = (function () {
     function playSFX(id, volumeOverride) {
         if (!initialized || !audioCtx || muted.sfx) return;
         if (!sfxBuffers[id]) return; // Not loaded yet
+
+        // Re-resume context if iOS suspended it (e.g., after tab switch)
+        if (audioCtx.state === 'suspended') audioCtx.resume();
 
         // Evict oldest if at capacity
         if (activeSFX.length >= MAX_CONCURRENT_SFX) {
@@ -223,6 +245,9 @@ JJ.Audio = (function () {
         if (muted.music) return;
         if (musicSource) return; // Already playing
 
+        // Re-resume context if iOS suspended it
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
         // Load MP3 file
         fetch('assets/music.mp3')
             .then(response => {
@@ -251,6 +276,9 @@ JJ.Audio = (function () {
         }
         if (muted.ambient) return;
         if (ambientSource) return; // Already playing
+
+        // Re-resume context if iOS suspended it
+        if (audioCtx.state === 'suspended') audioCtx.resume();
 
         // Load MP3 file
         fetch('assets/ambient.mp3')
