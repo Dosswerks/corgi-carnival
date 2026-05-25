@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Archer's Alley — A Corgi Carnival Game</title>
+<meta name="description" content="Catch the treats! A Corgi Carnival arcade game where you move Archer to catch falling treats tossed by Mom.">
+<!-- Open Graph -->
+<meta property="og:title" content="Archer's Alley — A Corgi Carnival Game">
+<meta property="og:description" content="Catch the treats! A Corgi Carnival arcade game where you move Archer to catch falling treats tossed by Mom.">
+<meta property="og:image" content="assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Archer's Alley — A Corgi Carnival Game">
+<meta name="twitter:description" content="Catch the treats! A Corgi Carnival arcade game where you move Archer to catch falling treats tossed by Mom.">
+<meta name="twitter:image" content="assets/logo.png">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: #1a1410;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        color: #f0e6d6;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    canvas {
+        display: block;
+        cursor: none;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    #ui {
+        width: 640px;
+        max-width: 100vw;
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 8px;
+        font-size: 18px;
+    }
+    #game-wrapper {
+        position: relative;
+        width: 644px;
+        max-width: 100vw;
+        border: 2px solid #8b5e34;
+        overflow: hidden;
+    }
+    #start-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #2a2018;
+        z-index: 10;
+        cursor: pointer;
+    }
+    #start-screen .screen-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+    }
+    #start-screen > *:not(.screen-bg) {
+        position: relative;
+        z-index: 1;
+    }
+    #start-screen h1 { font-size: 48px; color: #d4a54a; }
+    #start-screen p { font-size: 16px; color: #c4a882; text-align: center; }
+    #title-logo {
+        display: block;
+        max-width: 85%;
+        max-height: 60%;
+        object-fit: contain;
+        margin-bottom: 20px;
+    }
+    #start-screen.has-logo h1 { display: none; }
+    #start-screen.has-logo p {
+        color: #c4a882;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+    @keyframes blink-text {
+        0%, 49% { opacity: 1; }
+        50%, 100% { opacity: 0; }
+    }
+    #start-screen .blink-prompt {
+        position: absolute;
+        bottom: 35px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: #fff;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        z-index: 12;
+        animation: blink-text 1s step-end infinite;
+        pointer-events: none;
+    }
+    .has-logo #splash-title { display: none; }
+    .hidden { display: none !important; }
+
+    /* Game Over Screen */
+    #gameover-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #1a1410;
+        z-index: 10;
+        cursor: pointer;
+    }
+    #gameover-screen .screen-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+    }
+    #gameover-screen > *:not(.screen-bg) {
+        position: relative;
+        z-index: 1;
+    }
+    #gameover-screen h1 {
+        font-size: 48px;
+        color: #d4a54a;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    #gameover-screen .final-score {
+        font-size: 24px;
+        color: #f0e6d6;
+        margin-top: 12px;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    #gameover-screen .blink-prompt {
+        position: absolute;
+        bottom: 50px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: #d4a54a;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+        animation: blink-text 1s step-end infinite;
+        pointer-events: none;
+    }
+
+    /* Mobile touch control pad */
+    #touch-pad {
+        display: none;
+        width: 640px;
+        max-width: 100vw;
+        height: 80px;
+        background: linear-gradient(180deg, #5c3d1e 0%, #3d2814 30%, #4a3018 60%, #2e1e0f 100%);
+        border: 2px solid #8b5e34;
+        border-top: 1px solid #a0703c;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        position: relative;
+        cursor: none;
+        overflow: hidden;
+    }
+    /* Texture lines */
+    #touch-pad::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+            90deg,
+            transparent 0px,
+            transparent 18px,
+            rgba(0,0,0,0.08) 18px,
+            rgba(0,0,0,0.08) 19px
+        );
+        pointer-events: none;
+    }
+    #touch-pad .pad-label {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(208, 168, 112, 0.6);
+        font-size: 13px;
+        font-weight: bold;
+        letter-spacing: 3px;
+        white-space: nowrap;
+        pointer-events: none;
+        text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+    }
+    #touch-pad .arrow-left,
+    #touch-pad .arrow-right {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 24px solid transparent;
+        border-bottom: 24px solid transparent;
+        pointer-events: none;
+        opacity: 0.4;
+    }
+    #touch-pad .arrow-left {
+        left: 12px;
+        border-right: 28px solid #8b5e34;
+    }
+    #touch-pad .arrow-right {
+        right: 12px;
+        border-left: 28px solid #8b5e34;
+    }
+    #touch-pad .track-indicator {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(212,165,74,0.4), rgba(90,60,30,0.2));
+        border: 2px solid rgba(212,165,74,0.35);
+        pointer-events: none;
+        display: none;
+    }
+
+    /* Footer */
+    #game-footer {
+        width: 640px;
+        max-width: 100vw;
+        text-align: center;
+        padding: 8px 8px 4px;
+        z-index: 20;
+        position: relative;
+    }
+    #game-footer a {
+        color: #d4a54a;
+        font-size: 16px;
+        text-decoration: none;
+    }
+    #game-footer a:hover {
+        text-decoration: underline;
+    }
+    .footer-links {
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+    .footer-byline {
+        color: #8a7560;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+    .footer-byline a {
+        color: #a08a70;
+        font-size: 12px;
+        text-decoration: none;
+    }
+    .footer-byline a:hover {
+        color: #f0e6d6;
+        text-decoration: underline;
+    }
+    .tip-jar-section {
+        margin-top: 4px;
+        text-align: center;
+    }
+
+    @media (max-width: 660px) {
+        canvas { width: 100vw; height: auto; }
+        #ui { font-size: 14px; }
+        #start-screen h1 { font-size: 32px; }
+        #start-screen p { font-size: 13px; }
+        #touch-pad { display: block; }
+    }
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <span>SCORE: <span id="score">0</span></span>
+    <span>TREAT TIMES LEFT: <span id="lives">3</span></span>
+    <span>LEVEL: <span id="level">1</span></span>
+</div>
+<div id="game-wrapper">
+    <canvas id="game" width="640" height="480"></canvas>
+    <div id="start-screen">
+        <img class="screen-bg hidden" id="start-bg" src="" alt="">
+        <img id="title-logo" class="hidden" src="" alt="Archer's Alley Logo">
+        <h1 id="splash-title">ARCHER'S ALLEY</h1>
+        <p>Move your mouse or finger to catch the falling treats!</p>
+        <div class="blink-prompt">CLICK OR TAP TO START</div>
+    </div>
+    <div id="gameover-screen" class="hidden">
+        <img class="screen-bg hidden" id="gameover-bg" src="" alt="">
+        <h1>GAME OVER</h1>
+        <p class="final-score">Treats Caught: <span id="final-score">0</span></p>
+        <div class="blink-prompt">TAP OR PRESS R TO RESTART</div>
+    </div>
+</div>
+<div id="touch-pad"><div class="arrow-left"></div><span class="pad-label">SLIDE TO MOVE ARCHER</span><div class="arrow-right"></div><div class="track-indicator"></div></div>
+<div id="game-footer">
+    <div class="footer-links">
+        <a href="../index.html">🎪 BACK TO CORGI CARNIVAL 🎪</a>
+    </div>
+    <div class="footer-byline">
+        A game by <a href="https://andrewdoss.com" target="_blank">Andrew Doss</a><br>
+        &copy; 2026 Andrew Doss. All Rights Reserved.
+    </div>
+    <div class="tip-jar-section">
+        <p style="font-size:13px;color:#8a7560;line-height:1.3;margin:0 0 4px;">Enjoying the game? Tips help keep the games coming!</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:20px;">
+            <form action="https://www.paypal.com/donate" method="post" target="_blank">
+                <input type="hidden" name="hosted_button_id" value="HDD77QKGC6XXN">
+                <button type="submit" style="padding:0;background:none;border:none;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;gap:4px;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="100" viewBox="0 0 80 100" fill="none">
+                        <rect x="16" y="8" width="48" height="8" rx="2" fill="#aaa"/>
+                        <rect x="34" y="2" width="12" height="8" rx="2" fill="#999"/>
+                        <rect x="36" y="4" width="8" height="3" rx="1" fill="#777"/>
+                        <path d="M18 16 L16 82 Q16 90 24 90 L56 90 Q64 90 64 82 L62 16 Z" fill="rgba(180,220,255,0.18)" stroke="rgba(200,230,255,0.5)" stroke-width="2"/>
+                        <path d="M22 20 L21 75" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+                        <text x="40" y="38" text-anchor="middle" font-size="9" font-weight="bold" fill="rgba(255,255,255,0.7)" font-family="sans-serif" letter-spacing="1">TIP JAR</text>
+                        <g transform="rotate(-12 40 55)"><rect x="26" y="48" width="30" height="16" rx="2" fill="#3a7d44"/><text x="41" y="60" text-anchor="middle" font-size="12" font-weight="bold" fill="#6ec77a" font-family="serif">$</text></g>
+                        <g transform="rotate(8 40 60)"><rect x="24" y="54" width="30" height="16" rx="2" fill="#2e6b38"/><text x="39" y="66" text-anchor="middle" font-size="12" font-weight="bold" fill="#5cb868" font-family="serif">$</text></g>
+                        <g transform="rotate(-5 40 65)"><rect x="28" y="62" width="30" height="16" rx="2" fill="#357a3f"/><text x="43" y="74" text-anchor="middle" font-size="12" font-weight="bold" fill="#7dd48a" font-family="serif">$</text></g>
+                        <ellipse cx="30" cy="78" rx="6" ry="3" fill="#d4a017" stroke="#b8860b" stroke-width="1"/>
+                        <ellipse cx="42" cy="80" rx="5" ry="2.5" fill="#daa520" stroke="#b8860b" stroke-width="1"/>
+                        <ellipse cx="52" cy="77" rx="5" ry="3" fill="#c9960c" stroke="#a07608" stroke-width="1"/>
+                    </svg>
+                </button>
+            </form>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;top:-4px;">
+                <div id="qr-code" style="background:#fff;padding:4px;border-radius:4px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =============================================================
+// CUSTOMIZATION — Swap these with your own assets
+// =============================================================
+const CUSTOM_ASSETS = {
+    momImage: 'assets/mom.png',           // Mom (the tosser at the top)    treatImage: null,                     // replaced by individual treat images below
+    treat1Image: 'assets/treat1.png',     // Falling treat variant 1
+    treat2Image: 'assets/treat2.png',     // Falling treat variant 2
+    treat3Image: 'assets/treat3.png',     // Falling treat variant 3
+    baconImage: 'assets/bacon.png',       // Bonus treat (+5 points)
+    broccoliImage: 'assets/broccoli.png', // Penalty item (-1 life)
+    archerImage: 'assets/archer-head.png',     // Archer's head (the catcher)
+    backgroundImage: 'assets/kitchen.png',
+    logoImage: 'assets/logo.png',           // title logo on splash screen
+    titleBgImage: 'assets/title-bg.png',   // title screen background
+    gameoverBgImage: 'assets/gameover-bg.png', // game over screen background
+
+    // Sounds
+    catchSound: 'assets/chomp.mp3',
+    missSound: 'assets/miss.mp3',
+    levelUpSound: 'assets/levelup.mp3',
+    gameOverSound: 'assets/gameover.mp3',
+    gameStartSound: 'assets/gamestart.mp3',
+    throwSound: 'assets/throw.mp3',
+    baconSound: 'assets/bacon.mp3',
+    broccoliSound: 'assets/broccoli.mp3',
+    backgroundMusic: 'assets/music.mp3',
+};
+// =============================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const levelEl = document.getElementById('level');
+const startScreen = document.getElementById('start-screen');
+
+// Load custom assets
+const images = {};
+const sounds = {};
+
+function loadImage(key, src) {
+    return new Promise(resolve => {
+        if (!src) return resolve();
+        const img = new Image();
+        img.onload = () => { images[key] = img; resolve(); };
+        img.onerror = () => resolve();
+        img.src = src;
+    });
+}
+
+function loadSound(key, src) {
+    if (!src) return;
+    sounds[key] = new Audio(src);
+    sounds[key].volume = 0.5;
+}
+
+function loadMusic(src) {
+    if (!src) return;
+    music.src = src;
+}
+
+// Gapless music via Web Audio API
+const music = { ctx: null, buffer: null, source: null, src: null, playing: false, gain: null };
+
+async function _initMusicBuffer() {
+    if (music.buffer || !music.src) return;
+    try {
+        if (!music.ctx) music.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const resp = await fetch(music.src);
+        const arr = await resp.arrayBuffer();
+        music.buffer = await music.ctx.decodeAudioData(arr);
+        music.gain = music.ctx.createGain();
+        music.gain.gain.value = 0.3;
+        music.gain.connect(music.ctx.destination);
+    } catch (e) { /* fall back silently */ }
+}
+
+async function startMusic() {
+    await _initMusicBuffer();
+    if (!music.buffer || music.playing) return;
+    if (music.ctx.state === 'suspended') await music.ctx.resume();
+    const src = music.ctx.createBufferSource();
+    src.buffer = music.buffer;
+    src.loop = true;
+    src.connect(music.gain);
+    src.start(0);
+    music.source = src;
+    music.playing = true;
+}
+
+function stopMusic() {
+    if (music.source && music.playing) {
+        try { music.source.stop(); } catch (e) {}
+        music.source = null;
+        music.playing = false;
+    }
+}
+
+function playSound(key) {
+    if (attractMode) return;
+    if (sounds[key]) {
+        const clone = sounds[key].cloneNode();
+        clone.volume = sounds[key].volume;
+        clone.play().catch(() => {});
+    }
+}
+
+// Game state
+let game = {};
+
+// ---- ATTRACT MODE ----
+const ATTRACT_TITLE_DURATION = 480;
+const ATTRACT_DEMO_DURATION = 900;
+let attractMode = false;
+let attractTimer = ATTRACT_TITLE_DURATION;
+let attractDemoTimer = 0;
+let attractBreakFlag = false;
+
+function startAttractDemo() {
+    attractMode = true;
+    attractDemoTimer = ATTRACT_DEMO_DURATION;
+    attractBreakFlag = false;
+    startScreen.classList.add('hidden');
+    initGame();
+    game.running = true;
+    game.debugInvincible = true;
+    game.archerX = W / 2;
+}
+
+function endAttractDemo() {
+    attractMode = false;
+    attractTimer = ATTRACT_TITLE_DURATION;
+    attractDemoTimer = 0;
+    stopMusic();
+    initGame();
+    startScreen.classList.remove('hidden');
+}
+
+function attractAI() {
+    let targetX = game.archerX;
+    let bestTime = Infinity;
+    for (const treat of game.treats) {
+        if (!treat.alive) continue;
+        const timeToArcher = (game.archerY - treat.y) / treat.speed;
+        if (timeToArcher > 0 && timeToArcher < bestTime) {
+            bestTime = timeToArcher;
+            targetX = treat.x;
+        }
+    }
+    const dx = targetX - game.archerX;
+    game.archerX += dx * 0.12;
+    game.archerX = Math.max(game.archerWidth / 2, Math.min(W - game.archerWidth / 2, game.archerX));
+}
+
+function checkAttractBreak() {
+    return attractBreakFlag;
+}
+
+function initGame() {
+    game = {
+        running: false,
+        over: false,
+        score: 0,
+        lives: 3,
+        level: 1,
+        mom: { x: 80, dir: 1, speed: 1.5, width: 128, height: 155 },
+        archerX: W / 2,
+        archerWidth: 114,
+        archerHeight: 138,
+        archerY: H - 138,
+        prevArcherX: W / 2,
+        archerTilt: 0,
+        treats: [],
+        treatTimer: 0,
+        treatInterval: 70,
+        treatSpeed: 2.5,
+        treatRadius: 41,
+        catchesThisLevel: 0,
+        catchesNeeded: 10,
+        baconDropped: false,
+        broccoliDropped: false,
+        notification: null,
+        notificationTimer: 0,
+        splashes: [],
+        debugInvincible: false,
+    };
+    updateUI();
+}
+
+function updateUI() {
+    scoreEl.textContent = game.score;
+    livesEl.textContent = game.lives;
+    levelEl.textContent = game.level;
+}
+
+function dropTreat() {
+    let variant;
+    let treatType = 'normal';
+
+    // Once per level, drop bacon at a random point (after at least 3 catches)
+    if (!game.baconDropped && game.catchesThisLevel >= 3 && Math.random() < 0.15) {
+        variant = 'bacon';
+        treatType = 'bacon';
+        game.baconDropped = true;
+    }
+    // Once per level, drop broccoli at a random point (after at least 3 catches)
+    else if (!game.broccoliDropped && game.catchesThisLevel >= 3 && Math.random() < 0.15) {
+        variant = 'broccoli';
+        treatType = 'broccoli';
+        game.broccoliDropped = true;
+    }
+    else {
+        const variants = ['treat1', 'treat2', 'treat3'];
+        variant = variants[Math.floor(Math.random() * variants.length)];
+    }
+
+    playSound('throw');
+    game.treats.push({
+        x: game.mom.x + game.mom.width / 2,
+        y: 8 + game.mom.height - 20,
+        speed: game.treatSpeed,
+        alive: true,
+        variant: variant,
+        treatType: treatType,
+        wobbleOffset: Math.random() * Math.PI * 2,
+        wobbleTime: 0,
+    });
+}
+
+function levelUp() {
+    game.level++;
+    game.mom.speed = Math.min(game.mom.speed + 0.9, 9);
+    game.treatSpeed = Math.min(game.treatSpeed + 0.7, 11);
+    game.treatInterval = Math.max(game.treatInterval - 9, 18);
+    game.catchesThisLevel = 0;
+    game.catchesNeeded = 10 + game.level * 2;
+    game.baconDropped = false;
+    game.broccoliDropped = false;
+    playSound('levelUp');
+    showNotification('LEVEL UP!', '#d4a54a');
+    updateUI();
+}
+
+function addSplash(x, y, color) {
+    for (let i = 0; i < 8; i++) {
+        game.splashes.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            life: 20 + Math.random() * 10,
+            color,
+        });
+    }
+}
+
+function showNotification(text, color) {
+    game.notification = { text, color };
+    game.notificationTimer = 120; // 4 flashes at 15 frames per half-cycle
+}
+
+function showGameOver() {
+    game.over = true;
+    stopMusic();
+    playSound('gameOver');
+    document.getElementById('final-score').textContent = game.score;
+    document.getElementById('gameover-screen').classList.remove('hidden');
+}
+
+function restartGame() {
+    document.getElementById('gameover-screen').classList.add('hidden');
+    initGame();
+    game.running = true;
+    startScreen.classList.add('hidden');
+    startMusic();
+}
+
+function update() {
+    if (!game.running || game.over) return;
+
+    // Tick notification
+    if (game.notificationTimer > 0) {
+        game.notificationTimer--;
+        if (game.notificationTimer <= 0) {
+            game.notification = null;
+        }
+    }
+
+    const mom = game.mom;
+
+    // Move Mom
+    mom.x += mom.speed * mom.dir;
+    if (mom.x <= 0) { mom.x = 0; mom.dir = 1; }
+    if (mom.x >= W - mom.width) { mom.x = W - mom.width; mom.dir = -1; }
+
+    // Drop treats
+    game.treatTimer++;
+    if (game.treatTimer >= game.treatInterval) {
+        game.treatTimer = 0;
+        dropTreat();
+    }
+
+    // Move treats
+    for (const treat of game.treats) {
+        if (!treat.alive) continue;
+        treat.y += treat.speed;
+        treat.wobbleTime += 0.04;
+
+        // Check catch
+        const cx = treat.x;
+        const cy = treat.y;
+        const left = game.archerX - game.archerWidth / 2;
+        const right = game.archerX + game.archerWidth / 2;
+
+        if (cy >= game.archerY && cy <= game.archerY + game.archerHeight &&
+            cx >= left && cx <= right) {
+            treat.alive = false;
+
+            if (treat.treatType === 'bacon') {
+                game.score += 5;
+                addSplash(cx, cy, '#ff9900');
+                playSound('bacon');
+                showNotification('YOU GOT THE BACON!', '#ff9900');
+            } else if (treat.treatType === 'broccoli') {
+                game.lives--;
+                addSplash(cx, cy, '#44aa44');
+                playSound('broccoli');
+                showNotification("DON'T EAT THE BROCCOLI!", '#44aa44');
+                if (game.lives <= 0) {
+                    showGameOver();
+                }
+            } else {
+                game.score += 1;
+                game.catchesThisLevel++;
+                addSplash(cx, cy, '#ffcc00');
+                playSound('catch');
+
+                if (game.catchesThisLevel >= game.catchesNeeded) {
+                    levelUp();
+                }
+            }
+            updateUI();
+        }
+
+        // Check miss
+        if (cy > H) {
+            treat.alive = false;
+            if (treat.treatType === 'broccoli') {
+                // Reward for avoiding broccoli
+                game.score += 3;
+                playSound('bacon');
+                showNotification('BROCCOLI AVOIDED!', '#44aa44');
+                updateUI();
+            } else if (!game.debugInvincible) {
+                game.lives--;
+                playSound('miss');
+                updateUI();
+
+                if (game.lives <= 0) {
+                    showGameOver();
+                }
+            }
+        }
+    }
+
+    // Clean up
+    game.treats = game.treats.filter(t => t.alive);
+
+    // Update Archer tilt based on movement direction
+    const dx = game.archerX - game.prevArcherX;
+    const targetTilt = Math.max(-0.12, Math.min(0.12, dx * 0.02));
+    game.archerTilt += (targetTilt - game.archerTilt) * 0.15;
+    game.prevArcherX = game.archerX;
+
+    // Update splashes
+    for (const s of game.splashes) {
+        s.x += s.vx;
+        s.y += s.vy;
+        s.life--;
+    }
+    game.splashes = game.splashes.filter(s => s.life > 0);
+}
+
+function draw() {
+    // Background
+    if (images.background) {
+        ctx.drawImage(images.background, 0, 0, W, H);
+    } else {
+        // Default background — warm kitchen
+        ctx.fillStyle = '#3d2814';
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    if (!game.running && !game.over) return;
+
+    const mom = game.mom;
+
+    // Draw Mom
+    if (images.mom) {
+        ctx.drawImage(images.mom, mom.x, 8, mom.width, mom.height);
+    } else {
+        // Simple rectangle placeholder for sizing
+        ctx.fillStyle = '#e8a0b0';
+        ctx.fillRect(mom.x, 8, mom.width, mom.height);
+    }
+
+    // Draw falling treats
+    for (const treat of game.treats) {
+        if (!treat.alive) continue;
+        const rotation = Math.sin(treat.wobbleTime + treat.wobbleOffset) * 0.15;
+        ctx.save();
+        ctx.translate(treat.x, treat.y);
+        ctx.rotate(rotation);
+        if (images[treat.variant]) {
+            ctx.drawImage(images[treat.variant], -game.treatRadius, -game.treatRadius,
+                game.treatRadius * 2, game.treatRadius * 2);
+        } else {
+            // Default treat: bone shape
+            ctx.fillStyle = '#f0e0c0';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, game.treatRadius * 0.6, game.treatRadius * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-game.treatRadius * 0.5, 0, game.treatRadius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(game.treatRadius * 0.5, 0, game.treatRadius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // Draw Archer (the catcher)
+    const aLeft = game.archerX - game.archerWidth / 2;
+    if (images.archer) {
+        ctx.save();
+        // Rotate from bottom-center so bottom edge stays at canvas bottom
+        ctx.translate(game.archerX, H + 6);
+        ctx.rotate(game.archerTilt);
+        ctx.drawImage(images.archer, -game.archerWidth / 2, -game.archerHeight, game.archerWidth, game.archerHeight);
+        ctx.restore();
+    } else {
+        // Default Archer: corgi head placeholder
+        const cx = game.archerX;
+        const cy = game.archerY + game.archerHeight / 2;
+        // Head
+        ctx.fillStyle = '#e8a050';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, game.archerWidth / 2 - 4, game.archerHeight / 2 - 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Ears
+        ctx.fillStyle = '#c87830';
+        ctx.beginPath();
+        ctx.ellipse(cx - 28, cy - 16, 10, 16, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx + 28, cy - 16, 10, 16, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // White blaze
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 4, 12, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Nose
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 2, 5, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Eyes
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(cx - 10, cy - 6, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 10, cy - 6, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Draw splashes
+    for (const s of game.splashes) {
+        ctx.globalAlpha = s.life / 30;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Notification overlay (non-interrupting)
+    if (game.notification && game.notificationTimer > 0) {
+        ctx.save();
+        ctx.font = 'bold 36px Arial, Helvetica, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#000';
+        ctx.fillText(game.notification.text, W / 2 + 2, H / 2 + 2);
+        ctx.fillStyle = game.notification.color;
+        ctx.fillText(game.notification.text, W / 2, H / 2);
+        ctx.textAlign = 'left';
+        ctx.restore();
+    }
+
+    // Game over — handled by #gameover-screen HTML overlay
+}
+
+function gameLoop() {
+    // Attract mode: title timer countdown
+    if (!game.running && !game.over && !attractMode) {
+        attractTimer--;
+        if (attractTimer <= 0) {
+            startAttractDemo();
+        }
+    }
+
+    // Attract mode: AI drives Archer, check break & demo timer
+    if (attractMode) {
+        if (checkAttractBreak()) {
+            endAttractDemo();
+        } else {
+            attractDemoTimer--;
+            if (attractDemoTimer <= 0) {
+                endAttractDemo();
+            } else {
+                attractAI();
+            }
+        }
+    }
+
+    update();
+    draw();
+
+    // Draw blinking text during attract demo
+    if (attractMode) {
+        const blink = Math.floor(Date.now() / 500) % 2;
+        if (blink) {
+            ctx.save();
+            ctx.font = 'bold 24px Arial, Helvetica, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 6;
+            ctx.fillText('CLICK OR TAP TO START', W / 2, H - 35);
+            ctx.restore();
+            ctx.textAlign = 'left';
+        }
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Splash screen click/tap to start
+function startGame() {
+    if (attractMode) {
+        endAttractDemo();
+    }
+    if (!game.running && !game.over) {
+        game.running = true;
+        startScreen.classList.add('hidden');
+        attractMode = false;
+        playSound('gameStart');
+        startMusic();
+    }
+}
+
+startScreen.addEventListener('click', startGame);
+startScreen.addEventListener('touchstart', e => {
+    e.preventDefault();
+    startGame();
+}, { passive: false });
+
+const gameoverScreen = document.getElementById('gameover-screen');
+gameoverScreen.addEventListener('click', () => {
+    if (game.over) restartGame();
+});
+gameoverScreen.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (game.over) restartGame();
+}, { passive: false });
+
+// Input
+canvas.addEventListener('mousemove', e => {
+    if (attractMode) { attractBreakFlag = true; return; }
+    const rect = canvas.getBoundingClientRect();
+    game.archerX = (e.clientX - rect.left) * (W / rect.width);
+});
+
+canvas.addEventListener('click', () => {
+    if (attractMode) {
+        endAttractDemo();
+        startGame();
+        return;
+    }
+    if (game.over) {
+        restartGame();
+    }
+});
+
+document.addEventListener('keydown', e => {
+    if (attractMode) { attractBreakFlag = true; return; }
+    if ((e.key === 'q' || e.key === 'Q') && game.running) {
+        stopMusic();
+        initGame();
+        startScreen.classList.remove('hidden');
+        attractTimer = ATTRACT_TITLE_DURATION;
+        return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+        restartGame();
+    }
+});
+
+// Touch input
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (attractMode) {
+        endAttractDemo();
+        startGame();
+        return;
+    }
+    if (game.over) {
+        restartGame();
+    }
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    game.archerX = (touch.clientX - rect.left) * (W / rect.width);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    game.archerX = (touch.clientX - rect.left) * (W / rect.width);
+}, { passive: false });
+
+// Prevent pull-to-refresh and bounce scrolling
+document.addEventListener('touchmove', e => {
+    if (e.target === canvas) e.preventDefault();
+}, { passive: false });
+
+// Init
+async function init() {
+    await Promise.all([
+        loadImage('mom', CUSTOM_ASSETS.momImage),
+        loadImage('treat1', CUSTOM_ASSETS.treat1Image),
+        loadImage('treat2', CUSTOM_ASSETS.treat2Image),
+        loadImage('treat3', CUSTOM_ASSETS.treat3Image),
+        loadImage('bacon', CUSTOM_ASSETS.baconImage),
+        loadImage('broccoli', CUSTOM_ASSETS.broccoliImage),
+        loadImage('archer', CUSTOM_ASSETS.archerImage),
+        loadImage('background', CUSTOM_ASSETS.backgroundImage),
+        loadImage('logo', CUSTOM_ASSETS.logoImage),
+        loadImage('titleBg', CUSTOM_ASSETS.titleBgImage),
+        loadImage('gameoverBg', CUSTOM_ASSETS.gameoverBgImage),
+    ]);
+
+    // Show logo on splash screen if provided
+    if (images.logo) {
+        const logoEl = document.getElementById('title-logo');
+        logoEl.src = CUSTOM_ASSETS.logoImage;
+        logoEl.classList.remove('hidden');
+        startScreen.classList.add('has-logo');
+    }
+
+    // Show title screen background if provided
+    if (images.titleBg) {
+        const startBgEl = document.getElementById('start-bg');
+        startBgEl.src = CUSTOM_ASSETS.titleBgImage;
+        startBgEl.classList.remove('hidden');
+    }
+
+    // Show game over screen background if provided
+    if (images.gameoverBg) {
+        const gameoverBgEl = document.getElementById('gameover-bg');
+        gameoverBgEl.src = CUSTOM_ASSETS.gameoverBgImage;
+        gameoverBgEl.classList.remove('hidden');
+    }
+    loadSound('catch', CUSTOM_ASSETS.catchSound);
+    loadSound('miss', CUSTOM_ASSETS.missSound);
+    loadSound('levelUp', CUSTOM_ASSETS.levelUpSound);
+    loadSound('gameOver', CUSTOM_ASSETS.gameOverSound);
+    loadSound('gameStart', CUSTOM_ASSETS.gameStartSound);
+    loadSound('throw', CUSTOM_ASSETS.throwSound);
+    loadSound('bacon', CUSTOM_ASSETS.baconSound);
+    loadSound('broccoli', CUSTOM_ASSETS.broccoliSound);
+    // Volume adjustments
+    if (sounds['catch']) sounds['catch'].volume = 0.375;
+    if (sounds['levelUp']) sounds['levelUp'].volume = 0.625;
+    loadMusic(CUSTOM_ASSETS.backgroundMusic);
+
+    initGame();
+    gameLoop();
+}
+
+// Touch pad input (mobile control area below canvas)
+const touchPad = document.getElementById('touch-pad');
+const trackIndicator = touchPad.querySelector('.track-indicator');
+
+touchPad.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (attractMode) {
+        endAttractDemo();
+        startGame();
+        return;
+    }
+    if (game.over) {
+        restartGame();
+    }
+    const rect = canvas.getBoundingClientRect();
+    const padRect = touchPad.getBoundingClientRect();
+    const touch = e.touches[0];
+    const ratio = (touch.clientX - padRect.left) / padRect.width;
+    game.archerX = ratio * W;
+    trackIndicator.style.display = 'block';
+    trackIndicator.style.left = touch.clientX - padRect.left + 'px';
+}, { passive: false });
+
+touchPad.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const padRect = touchPad.getBoundingClientRect();
+    const touch = e.touches[0];
+    const ratio = (touch.clientX - padRect.left) / padRect.width;
+    game.archerX = Math.max(0, Math.min(W, ratio * W));
+    trackIndicator.style.left = (touch.clientX - padRect.left) + 'px';
+}, { passive: false });
+
+touchPad.addEventListener('touchend', () => {
+    trackIndicator.style.display = 'none';
+}, { passive: false });
+
+init();
+</script>
+
+<script>
+var qrImg=null;
+(function(){
+    var qr = qrcode(0, 'L');
+    qr.addData('https://www.paypal.com/donate/?hosted_button_id=HDD77QKGC6XXN');
+    qr.make();
+    var el = document.getElementById('qr-code');
+    if (el) el.innerHTML = qr.createSvgTag({cellSize:2, margin:0});
+    // Pre-render QR to image for canvas drawing
+    var svg=qr.createSvgTag({cellSize:3,margin:0});
+    var blob=new Blob([svg],{type:'image/svg+xml'});
+    var url=URL.createObjectURL(blob);
+    var i=new Image();i.onload=function(){qrImg=i;URL.revokeObjectURL(url);};i.src=url;
+})();
+</script>
+</body>
+</html>
