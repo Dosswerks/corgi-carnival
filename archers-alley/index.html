@@ -408,10 +408,10 @@ function loadImage(key, src) {
     });
 }
 
-function loadSound(key, src) {
+function loadSound(key, src, volume) {
     if (!src) return;
     sounds[key] = new Audio(src);
-    sounds[key].volume = 0.5;
+    sounds[key].volume = volume !== undefined ? volume : 0.5;
 }
 
 function loadMusic(src) {
@@ -1032,9 +1032,9 @@ async function init() {
         gameoverBgEl.src = CUSTOM_ASSETS.gameoverBgImage;
         gameoverBgEl.classList.remove('hidden');
     }
-    loadSound('catch', CUSTOM_ASSETS.catchSound);
+    loadSound('catch', CUSTOM_ASSETS.catchSound, 0.14);
     loadSound('miss', CUSTOM_ASSETS.missSound);
-    loadSound('levelUp', CUSTOM_ASSETS.levelUpSound);
+    loadSound('levelUp', CUSTOM_ASSETS.levelUpSound, 0.625);
     loadSound('gameOver', CUSTOM_ASSETS.gameOverSound);
     loadSound('gameStart', CUSTOM_ASSETS.gameStartSound);
     loadSound('throw', CUSTOM_ASSETS.throwSound);
