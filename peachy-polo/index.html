@@ -1,0 +1,2423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Peachy Polo — A Corgi Carnival Game</title>
+<meta name="description" content="Smash through bouncing balls and score goals! A physics-chaos arcade game where Peach the Corgi clears ball traffic to score moving goals.">
+<!-- Open Graph -->
+<meta property="og:title" content="Peachy Polo — A Corgi Carnival Game">
+<meta property="og:description" content="Smash through bouncing balls and score goals! A physics-chaos arcade game starring Peach the Corgi.">
+<meta property="og:image" content="assets/peachy-polo-og.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Peachy Polo — A Corgi Carnival Game">
+<meta name="twitter:description" content="Smash through bouncing balls and score goals! A physics-chaos arcade game starring Peach the Corgi.">
+<meta name="twitter:image" content="assets/peachy-polo-og.png">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    color: #e0e8f0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+canvas {
+    display: block;
+    cursor: none;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+#ui {
+    width: 480px;
+    max-width: 100vw;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 8px;
+    font-size: 16px;
+    color: #00d4ff;
+    text-shadow: 0 0 6px rgba(0,212,255,0.4);
+}
+#game-wrapper {
+    position: relative;
+    width: 484px;
+    max-width: 100vw;
+    border: 2px solid #00d4ff;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(0,212,255,0.3), inset 0 0 8px rgba(0,212,255,0.1);
+}
+#start-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #0a0a0a 0%, #0d1520 50%, #0a0a0a 100%);
+    z-index: 10;
+    cursor: pointer;
+}
+#start-screen .screen-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+#hex-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+#start-screen > *:not(.screen-bg):not(#hex-bg):not(.blink-prompt) {
+    position: relative;
+    z-index: 1;
+}
+#start-screen h1 {
+    font-size: 42px;
+    color: #ff8c00;
+    text-shadow: 0 0 12px rgba(255,140,0,0.6), 0 2px 8px rgba(0,212,255,0.3);
+}
+#start-screen p {
+    font-size: 14px;
+    color: #ffffff;
+    text-align: center;
+    max-width: 80%;
+}
+#title-logo {
+    display: block;
+    max-width: 75%;
+    max-height: 40%;
+    object-fit: contain;
+    margin-bottom: 16px;
+}
+#start-screen.has-logo h1 { display: none; }
+#start-screen.has-logo p { text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+@keyframes blink-text {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+#start-screen .blink-prompt {
+    position: absolute;
+    bottom: 20px;
+    left: 0; width: 100%;
+    text-align: center;
+    color: #00d4ff;
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0,212,255,0.8);
+    z-index: 12;
+    animation: blink-text 1s step-end infinite;
+    pointer-events: none;
+}
+.hidden { display: none !important; }
+
+/* Game Over Screen */
+#gameover-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #0a0a0a 0%, #0d1520 100%);
+    z-index: 10;
+    cursor: pointer;
+}
+#gameover-screen .screen-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+#gameover-screen > *:not(.screen-bg):not(.blink-prompt):not(.gameover-quip) {
+    position: relative;
+    z-index: 1;
+}
+#gameover-screen h1 {
+    font-size: 42px;
+    color: #ffffff;
+    text-shadow: 0 0 12px rgba(0,212,255,0.6), 0 2px 8px rgba(0,0,0,0.8);
+    margin-top: -85px;
+}
+#gameover-screen .gameover-quip {
+    position: absolute;
+    top: 23%;
+    left: 0; width: 100%;
+    text-align: center;
+    font-size: 16px;
+    color: #8a9ab0;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    z-index: 1;
+}
+#gameover-screen .final-score {
+    font-size: 22px;
+    color: #e0e8f0;
+    margin-top: 12px;
+    text-shadow: 0 0 6px rgba(0,212,255,0.4);
+}
+#gameover-screen .blink-prompt {
+    position: absolute;
+    bottom: 20px;
+    left: 0; width: 100%;
+    text-align: center;
+    color: #00d4ff;
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0,212,255,0.8);
+    animation: blink-text 1s step-end infinite;
+    pointer-events: none;
+}
+/* Mobile touch control pad */
+#touch-pad {
+    display: none;
+    width: 480px;
+    max-width: 100vw;
+    height: 80px;
+    background: linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 30%, #141428 60%, #0a0a14 100%);
+    border: 2px solid #00d4ff;
+    border-top: 1px solid #00a8cc;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    cursor: none;
+    overflow: hidden;
+    box-shadow: 0 0 8px rgba(0,212,255,0.2);
+}
+/* Texture lines */
+#touch-pad::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 18px,
+        rgba(0,212,255,0.04) 18px,
+        rgba(0,212,255,0.04) 19px
+    );
+    pointer-events: none;
+}
+#touch-pad .pad-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(0,212,255,0.5);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 0 4px rgba(0,212,255,0.3);
+}
+#touch-pad .arrow-left,
+#touch-pad .arrow-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 24px solid transparent;
+    border-bottom: 24px solid transparent;
+    pointer-events: none;
+    opacity: 0.4;
+}
+#touch-pad .arrow-left {
+    left: 12px;
+    border-right: 28px solid #00d4ff;
+}
+#touch-pad .arrow-right {
+    right: 12px;
+    border-left: 28px solid #00d4ff;
+}
+#touch-pad .track-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.4), rgba(255,140,0,0.2));
+    border: 2px solid rgba(0,212,255,0.35);
+    pointer-events: none;
+    display: none;
+}
+
+/* Footer */
+#game-footer {
+    width: 480px;
+    max-width: 100vw;
+    text-align: center;
+    padding: 8px 8px 4px;
+    z-index: 20;
+    position: relative;
+}
+#game-footer a { color: #ff8c00; font-size: 16px; text-decoration: none; }
+#game-footer a:hover { text-decoration: underline; }
+.footer-links { margin-bottom: 4px; line-height: 1.4; }
+.footer-byline { color: #5a6a7a; font-size: 12px; line-height: 1.4; }
+.footer-byline a { color: #7a8a9a; font-size: 12px; text-decoration: none; }
+.footer-byline a:hover { color: #00d4ff; text-decoration: underline; }
+.tip-jar-section { margin-top: 4px; text-align: center; }
+
+@media (max-width: 500px) {
+    canvas { width: 100vw; height: auto; }
+    #ui { font-size: 13px; }
+    #start-screen h1 { font-size: 28px; }
+    #start-screen p { font-size: 12px; }
+    #start-screen .blink-prompt,
+    #gameover-screen .blink-prompt { font-size: 3.75vw; bottom: 5.5vw; }
+    #touch-pad { display: block; }
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <span>SCORE: <span id="score">0</span></span>
+    <span>BALLS: <span id="lives">3</span></span>
+    <span>LEVEL: <span id="level">1</span></span>
+</div>
+<div id="game-wrapper">
+    <canvas id="game" width="480" height="720"></canvas>
+    <div id="start-screen">
+        <canvas id="hex-bg" aria-hidden="true"></canvas>
+        <img class="screen-bg hidden" id="start-bg" src="" alt="">
+        <img id="title-logo" class="hidden" src="" alt="Peachy Polo Logo">
+        <h1 id="splash-title">PEACHY POLO</h1>
+        <p>Smash through the balls and score goals!<br>Move Peach left &amp; right to bounce the ball.</p>
+        <div class="blink-prompt">CLICK OR TAP TO START</div>
+    </div>
+    <div id="gameover-screen" class="hidden">
+        <img class="screen-bg hidden" id="gameover-bg" src="" alt="">
+        <p class="gameover-quip"><em>Peach tried her best!</em></p>
+        <h1>GAME OVER</h1>
+        <p class="final-score">Score: <span id="final-score">0</span></p>
+        <div class="blink-prompt">TAP OR PRESS R TO RESTART</div>
+    </div>
+</div>
+<div id="touch-pad">
+    <div class="arrow-left"></div>
+    <span class="pad-label">SLIDE TO MOVE PEACH</span>
+    <div class="arrow-right"></div>
+    <div class="track-indicator"></div>
+</div>
+<div id="game-footer">
+    <div class="footer-links">
+        <a href="../index.html">🎪 BACK TO CORGI CARNIVAL 🎪</a>
+    </div>
+    <div class="footer-byline">
+        A game by <a href="https://andrewdoss.com" target="_blank">Andrew Doss</a><br>
+        &copy; 2026 Andrew Doss. All Rights Reserved.
+    </div>
+    <div class="tip-jar-section">
+        <p style="font-size:13px;color:#5a6a7a;line-height:1.3;margin:0 0 4px;">Enjoying the game? Tips help keep the games coming!</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:20px;">
+            <form action="https://www.paypal.com/donate" method="post" target="_blank">
+                <input type="hidden" name="hosted_button_id" value="HDD77QKGC6XXN">
+                <button type="submit" style="padding:0;background:none;border:none;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;gap:4px;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="100" viewBox="0 0 80 100" fill="none">
+                        <rect x="16" y="8" width="48" height="8" rx="2" fill="#aaa"/>
+                        <rect x="34" y="2" width="12" height="8" rx="2" fill="#999"/>
+                        <rect x="36" y="4" width="8" height="3" rx="1" fill="#777"/>
+                        <path d="M18 16 L16 82 Q16 90 24 90 L56 90 Q64 90 64 82 L62 16 Z" fill="rgba(180,220,255,0.18)" stroke="rgba(200,230,255,0.5)" stroke-width="2"/>
+                        <path d="M22 20 L21 75" stroke="rgba(255,255,255,0.15)" stroke-width="3" stroke-linecap="round"/>
+                        <text x="40" y="38" text-anchor="middle" font-size="9" font-weight="bold" fill="rgba(255,255,255,0.7)" font-family="sans-serif" letter-spacing="1">TIP JAR</text>
+                        <g transform="rotate(-12 40 55)"><rect x="26" y="48" width="30" height="16" rx="2" fill="#3a7d44"/><text x="41" y="60" text-anchor="middle" font-size="12" font-weight="bold" fill="#6ec77a" font-family="serif">$</text></g>
+                        <g transform="rotate(8 40 60)"><rect x="24" y="54" width="30" height="16" rx="2" fill="#2e6b38"/><text x="39" y="66" text-anchor="middle" font-size="12" font-weight="bold" fill="#5cb868" font-family="serif">$</text></g>
+                        <g transform="rotate(-5 40 65)"><rect x="28" y="62" width="30" height="16" rx="2" fill="#357a3f"/><text x="43" y="74" text-anchor="middle" font-size="12" font-weight="bold" fill="#7dd48a" font-family="serif">$</text></g>
+                        <ellipse cx="30" cy="78" rx="6" ry="3" fill="#d4a017" stroke="#b8860b" stroke-width="1"/>
+                        <ellipse cx="42" cy="80" rx="5" ry="2.5" fill="#daa520" stroke="#b8860b" stroke-width="1"/>
+                        <ellipse cx="52" cy="77" rx="5" ry="3" fill="#c9960c" stroke="#a07608" stroke-width="1"/>
+                    </svg>
+                </button>
+            </form>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;top:-4px;">
+                <div id="qr-code" style="background:#fff;padding:4px;border-radius:4px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =============================================================
+// CUSTOMIZATION — Swap these with your own assets
+// =============================================================
+const CUSTOM_ASSETS = {
+    // Images
+    peachImage: 'assets/peach-paddle.png',     // Peach corgi paddle
+    ballImage: 'assets/ball.png',              // Active ball
+    backgroundImage: 'assets/background.png',  // In-game background
+    logoImage: 'assets/logo.png',              // Title logo on splash
+    titleBgImage: 'assets/title-bg.png',       // Title screen background
+    gameoverBgImage: 'assets/gameover-bg.png', // Game over screen background
+    goalImage: 'assets/goal.png',              // Goal net
+    hydrantImage: 'assets/hydrant.png',        // Fire hydrant hazard
+    sprinklerImage: 'assets/sprinkler.png',    // Sprinkler hazard
+    roombaImage: 'assets/roomba.png',          // Roomba hazard
+    squirrel1Image: 'assets/squirrel1.png',    // Squirrel frame 1 (facing right)
+    squirrel2Image: 'assets/squirrel2.png',    // Squirrel frame 2 (facing right)
+
+    // Sounds
+    bounceSound: 'assets/bounce.mp3',
+    goalSound: 'assets/goal.mp3',
+    hitSound: 'assets/hit.mp3',
+    levelUpSound: 'assets/levelup.mp3',
+    gameOverSound: 'assets/gameover.mp3',
+    gameStartSound: 'assets/gamestart.mp3',
+    powerUpSound: 'assets/powerup.mp3',
+    missSound: 'assets/miss.mp3',
+    wallSound: 'assets/wall.mp3',
+    wrongColorSound: 'assets/wrong-color.mp3',
+    backgroundMusic: 'assets/music.mp3',
+};
+// =============================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;   // 480
+const H = canvas.height;  // 720
+
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const levelEl = document.getElementById('level');
+const startScreen = document.getElementById('start-screen');
+
+// =============================================================
+// ASSET LOADING & AUDIO (iOS-safe Web Audio API)
+// =============================================================
+const images = {};
+const sounds = {};
+
+function loadImage(key, src) {
+    return new Promise(resolve => {
+        if (!src) return resolve();
+        const img = new Image();
+        img.onload = () => { images[key] = img; resolve(); };
+        img.onerror = () => resolve();
+        img.src = src;
+    });
+}
+
+function loadSound(key, src, volume) {
+    if (!src) return;
+    const audio = new Audio();
+    audio.volume = volume !== undefined ? volume : 0.5;
+    audio.addEventListener('canplaythrough', () => { audio._loaded = true; }, { once: true });
+    audio.addEventListener('error', () => { audio._loaded = false; });
+    audio.src = src;
+    sounds[key] = audio;
+}
+
+function loadMusic(src) {
+    if (!src) return;
+    music.src = src;
+}
+
+// Gapless looping music via Web Audio API (handles iOS AudioContext suspend)
+const music = { ctx: null, buffer: null, source: null, src: null, playing: false, gain: null };
+
+async function _initMusicBuffer() {
+    if (music.buffer || !music.src) return;
+    try {
+        if (!music.ctx) music.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const resp = await fetch(music.src);
+        const arr = await resp.arrayBuffer();
+        music.buffer = await music.ctx.decodeAudioData(arr);
+        music.gain = music.ctx.createGain();
+        music.gain.gain.value = 0.3;
+        music.gain.connect(music.ctx.destination);
+    } catch (e) { /* fail silently if music not available */ }
+}
+
+async function startMusic() {
+    await _initMusicBuffer();
+    if (!music.buffer || music.playing) return;
+    // iOS requires resume after user gesture
+    if (music.ctx.state === 'suspended') await music.ctx.resume();
+    const src = music.ctx.createBufferSource();
+    src.buffer = music.buffer;
+    src.loop = true;
+    src.connect(music.gain);
+    src.start(0);
+    music.source = src;
+    music.playing = true;
+}
+
+function stopMusic() {
+    if (music.source && music.playing) {
+        try { music.source.stop(); } catch (e) {}
+        music.source = null;
+        music.playing = false;
+    }
+}
+
+function playSound(key) {
+    if (attractMode) return; // No sounds during attract demo
+    if (sounds[key] && sounds[key]._loaded) {
+        const clone = sounds[key].cloneNode();
+        clone.volume = sounds[key].volume;
+        clone.play().catch(() => {});
+    } else {
+        synthSound(key);
+    }
+}
+
+// Procedural sound synthesizer — generates sounds via Web Audio API
+let synthCtx = null;
+
+function ensureSynthCtx() {
+    if (synthCtx) return synthCtx;
+    try {
+        synthCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {}
+    return synthCtx;
+}
+
+// Resume audio context on first user gesture (required by iOS/Chrome)
+function resumeAudio() {
+    if (synthCtx && synthCtx.state === 'suspended') synthCtx.resume();
+    if (music.ctx && music.ctx.state === 'suspended') music.ctx.resume();
+}
+document.addEventListener('click', resumeAudio, { once: false });
+document.addEventListener('touchstart', resumeAudio, { once: false });
+
+function synthSound(key) {
+    const actx = ensureSynthCtx();
+    if (!actx || actx.state === 'suspended') return;
+
+    try {
+        const now = actx.currentTime;
+        const gain = actx.createGain();
+        gain.connect(actx.destination);
+
+        if (key === 'bounce') {
+            // Short punchy thud
+            const osc = actx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (key === 'hit') {
+            // Crisp pop
+            const osc = actx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.06);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.08);
+        } else if (key === 'wall') {
+            // Soft tick
+            const osc = actx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (key === 'goal') {
+            // Triumphant rising tone
+            const osc = actx.createOscillator();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.setValueAtTime(0.25, now + 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.5);
+            // Harmony
+            const osc2 = actx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(600, now);
+            osc2.frequency.exponentialRampToValueAtTime(1600, now + 0.3);
+            const g2 = actx.createGain();
+            g2.gain.setValueAtTime(0.15, now);
+            g2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc2.connect(g2);
+            g2.connect(actx.destination);
+            osc2.start(now);
+            osc2.stop(now + 0.4);
+        } else if (key === 'miss') {
+            // Descending sad tone
+            const osc = actx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        } else if (key === 'powerUp') {
+            // Sparkly ascending arpeggio
+            const notes = [523, 659, 784, 1047];
+            notes.forEach((freq, i) => {
+                const osc = actx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + i * 0.06);
+                const g = actx.createGain();
+                g.gain.setValueAtTime(0, now + i * 0.06);
+                g.gain.linearRampToValueAtTime(0.2, now + i * 0.06 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.15);
+                osc.connect(g);
+                g.connect(actx.destination);
+                osc.start(now + i * 0.06);
+                osc.stop(now + i * 0.06 + 0.15);
+            });
+        } else if (key === 'levelUp') {
+            // Fanfare
+            const notes = [523, 659, 784, 1047, 1318];
+            notes.forEach((freq, i) => {
+                const osc = actx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                const g = actx.createGain();
+                g.gain.setValueAtTime(0, now + i * 0.08);
+                g.gain.linearRampToValueAtTime(0.15, now + i * 0.08 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
+                osc.connect(g);
+                g.connect(actx.destination);
+                osc.start(now + i * 0.08);
+                osc.stop(now + i * 0.08 + 0.2);
+            });
+        } else if (key === 'gameOver') {
+            // Low descending drone
+            const osc = actx.createOscillator();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.8);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.9);
+        } else if (key === 'gameStart') {
+            // Quick energetic blip
+            const osc = actx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.15);
+        }
+    } catch (e) { /* silent fail */ }
+}
+
+// =============================================================
+// GAME CONSTANTS
+// =============================================================
+const PADDLE_Y = H - 120;
+const PADDLE_WIDTH = 120;
+const PADDLE_HEIGHT = 101;
+// Ball contact point relative to paddle top-left (from 240x217 image at 2x)
+const PADDLE_CONTACT_X = 62.5;  // center-ish horizontally (125/2)
+const PADDLE_CONTACT_Y = 33.5;  // the sweet spot on Peach's back (67/2)
+const BALL_RADIUS = 8;
+const STACK_BALL_RADIUS = 8;
+const GOAL_WIDTH = 140;
+const GOAL_HEIGHT = 41;
+const GOAL_Y = 20;
+const BALL_SPEED = 10;           // Fast active ball speed
+const STACK_FRICTION = 0.97;     // Pool-table friction for knocked stack balls
+const BALL_COLORS = ['#ff2200','#ff6600','#aa00ff','#ff00aa','#00ffcc','#00aaff','#ffee00','#ff0066'];
+const POWER_UP_DURATION = 600; // ~10 seconds at 60fps
+
+// =============================================================
+// GAME STATE
+// =============================================================
+let game = {};
+
+// ---- ATTRACT MODE ----
+const ATTRACT_TITLE_DURATION = 480;
+const ATTRACT_DEMO_DURATION = 900;
+let attractMode = false;
+let attractTimer = ATTRACT_TITLE_DURATION;
+let attractDemoTimer = 0;
+let attractBreakFlag = false;
+
+function initGame() {
+    game = {
+        running: false,
+        over: false,
+        score: 0,
+        lives: 3,
+        level: 1,
+        // Paddle (Peach)
+        paddleX: W / 2,
+        paddleWidth: PADDLE_WIDTH,
+        paddleHeight: PADDLE_HEIGHT,
+        paddleSpeed: 0,
+        tailWag: 0,
+        facingRight: true,
+        prevPaddleX: W / 2,
+        // Active balls
+        balls: [],
+        // Stack balls (obstacles)
+        stackBalls: [],
+        // Goal
+        goalX: W / 2 - GOAL_WIDTH / 2,
+        goalDir: 1,
+        goalSpeed: 1.2,
+        goalColor: null,
+        // Goal guards
+        guards: [],
+        // Power-ups
+        powerUps: [],
+        activePower: null,
+        powerTimer: 0,
+        // Particles
+        particles: [],
+        // Notification
+        notification: null,
+        notificationTimer: 0,
+        // Level state
+        ballLaunched: false,
+        levelAnnounceTimer: 0,
+        // Hazards
+        hazards: [],
+        // Squirrel spawn queue
+        squirrelQueue: [],
+        // Debug
+        debugInvincible: false,
+    };
+    setupLevel(game.level);
+    updateUI();
+}
+
+// =============================================================
+// LEVEL SETUP
+// =============================================================
+function setupLevel(lvl) {
+    game.stackBalls = [];
+    game.guards = [];
+    game.hazards = [];
+    game.powerUps = [];
+    game.balls = [];
+    game.ballLaunched = false;
+    game.goalSpeed = 1.2 + lvl * 0.3;
+    game.levelAnnounceTimer = 120; // Show level announcement for 2 seconds
+
+    // No color requirement — white ball is always the player's ball
+    game.goalColor = null;
+
+    // Generate ball formations — alternating triangle racks (like pool balls)
+    // 4 triangles across, alternating point-up and point-down, tightly packed
+    const r = STACK_BALL_RADIUS;
+    const d = r * 2 + 2; // diameter + small gap between balls in a rack
+    const gapBetween = 2; // minimal pixel gap between triangles
+    const numTris = 4;
+
+    // Rows per triangle: starts at 5, grows with level but capped to fit width
+    const maxTriRows = Math.floor((W - (numTris - 1) * gapBetween) / (numTris * d));
+    const triRows = Math.min(5 + Math.floor(lvl / 2), maxTriRows);
+
+    // Always 2 bands for density, 3 bands at higher levels
+    const bands = lvl >= 6 ? 3 : 2;
+    const bandGap = 4; // minimal vertical gap between bands
+
+    for (let band = 0; band < bands; band++) {
+        const totalTriWidth = triRows * d;
+        const totalWidth = numTris * totalTriWidth + (numTris - 1) * gapBetween;
+        const startX = (W - totalWidth) / 2;
+        const bandHeight = triRows * (d * 0.866);
+        const startY = GOAL_Y + GOAL_HEIGHT + 35 + band * (bandHeight + bandGap);
+
+        for (let t = 0; t < numTris; t++) {
+            const pointUp = ((t + band) % 2 === 0); // alternate, offset per band
+            const triCenterX = startX + t * (totalTriWidth + gapBetween) + totalTriWidth / 2;
+
+            for (let row = 0; row < triRows; row++) {
+                const ballsInRow = pointUp ? (row + 1) : (triRows - row);
+                const rowWidth = (ballsInRow - 1) * d;
+                const rowY = startY + row * (d * 0.866);
+
+                for (let b = 0; b < ballsInRow; b++) {
+                    const bx = triCenterX - rowWidth / 2 + b * d;
+                    const by = rowY;
+                    game.stackBalls.push({
+                        x: bx,
+                        y: by,
+                        vx: 0,
+                        vy: 0,
+                        radius: STACK_BALL_RADIUS,
+                        color: BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)],
+                        alive: true,
+                        mass: 1,
+                    });
+                }
+            }
+        }
+    }
+
+    // Goal guards (level 4+)
+    if (lvl >= 4) {
+        const numGuards = Math.min(Math.floor((lvl - 3) / 2) + 1, 4);
+        for (let i = 0; i < numGuards; i++) {
+            game.guards.push({
+                x: W * (i + 1) / (numGuards + 1),
+                y: GOAL_Y + GOAL_HEIGHT + 20 + i * 15,
+                radius: 10 + Math.random() * 5,
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.02 + Math.random() * 0.02,
+                orbitRadius: 30 + Math.random() * 20,
+                centerX: W * (i + 1) / (numGuards + 1),
+            });
+        }
+    }
+
+    // Hazards — introduced one at a time per level
+    // Level 3: 1 hydrant
+    // Level 4: 1 hydrant + 1 squirrel (spawns mid-round)
+    // Level 5: 2 hydrants + 1 squirrel
+    // Level 6: 2 hydrants + 1 sprinkler + 1 squirrel
+    // Level 7: 2 hydrants + 1 sprinkler + 1 roomba + 2 squirrels
+    // Level 8+: 3 hydrants + 1 sprinkler + 1 roomba + 2 squirrels
+    const hazardSchedule = {
+        hydrants:   lvl >= 8 ? 3 : lvl >= 5 ? 2 : lvl >= 3 ? 1 : 0,
+        sprinklers: lvl >= 6 ? 1 : 0,
+        roombas:    lvl >= 7 ? 1 : 0,
+        squirrels:  lvl >= 7 ? 2 : lvl >= 4 ? 1 : 0,
+    };
+
+    // Place hydrants (static, non-overlapping)
+    for (let i = 0; i < hazardSchedule.hydrants; i++) {
+        let placed = false;
+        for (let attempt = 0; attempt < 20; attempt++) {
+            const hx = 60 + Math.random() * (W - 120);
+            const hy = 300 + Math.random() * 250;
+            let overlaps = false;
+            for (const existing of game.hazards) {
+                const dx = hx - existing.x;
+                const dy = hy - existing.y;
+                const minDist = 16 + existing.radius + 10;
+                if (dx * dx + dy * dy < minDist * minDist) { overlaps = true; break; }
+            }
+            if (!overlaps) {
+                game.hazards.push({ type: 'hydrant', x: hx, y: hy, radius: 16, timer: 0 });
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            game.hazards.push({ type: 'hydrant', x: 60 + Math.random() * (W - 120), y: 300 + Math.random() * 250, radius: 16, timer: 0 });
+        }
+    }
+
+    // Place sprinklers (static)
+    for (let i = 0; i < hazardSchedule.sprinklers; i++) {
+        game.hazards.push({
+            type: 'sprinkler',
+            x: 60 + Math.random() * (W - 120),
+            y: 280 + Math.random() * 220,
+            radius: 15,
+            timer: 0,
+        });
+    }
+
+    // Place roombas (mobile)
+    for (let i = 0; i < hazardSchedule.roombas; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        game.hazards.push({
+            type: 'roomba',
+            x: 80 + Math.random() * (W - 160),
+            y: 250 + Math.random() * 280,
+            radius: 20,
+            timer: 0,
+            vx: Math.cos(angle) * 0.8,
+            vy: Math.sin(angle) * 0.8,
+            holdingBall: null,
+            holdTimer: 0,
+            spinAngle: 0,
+        });
+    }
+
+    // Schedule squirrels to run in from the sides during gameplay
+    game.squirrelQueue = [];
+    for (let i = 0; i < hazardSchedule.squirrels; i++) {
+        game.squirrelQueue.push({
+            delay: 180 + i * 240, // staggered: first at ~3s, next at ~7s, etc.
+        });
+    }
+
+    spawnBall();
+}
+
+function spawnBall() {
+    const cx = game.facingRight === false
+        ? game.paddleX + game.paddleWidth / 2 - PADDLE_CONTACT_X
+        : game.paddleX - game.paddleWidth / 2 + PADDLE_CONTACT_X;
+    game.balls.push({
+        x: cx,
+        y: PADDLE_Y + PADDLE_CONTACT_Y - BALL_RADIUS - 2,
+        vx: 0,
+        vy: 0,
+        radius: BALL_RADIUS,
+        color: '#ffffff',
+        active: true,
+        onPaddle: true,
+        mass: 1,
+    });
+}
+
+function launchBall() {
+    for (const ball of game.balls) {
+        if (ball.onPaddle) {
+            ball.onPaddle = false;
+            // Launch at constant BALL_SPEED, slight random angle
+            const angle = (Math.random() - 0.5) * (Math.PI / 4); // up to 45° off center
+            ball.vx = Math.sin(angle) * BALL_SPEED;
+            ball.vy = -Math.cos(angle) * BALL_SPEED;
+            game.ballLaunched = true;
+            playSound('bounce');
+        }
+    }
+}
+
+// =============================================================
+// PHYSICS & COLLISION
+// =============================================================
+function circleCollision(a, b) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    return dist < a.radius + b.radius;
+}
+
+function resolveCircleCollision(ball, stack) {
+    const dx = ball.x - stack.x;
+    const dy = ball.y - stack.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist === 0) return;
+    const overlap = (ball.radius + stack.radius) - dist;
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    // Separate — push stack ball away, barely move the white ball
+    ball.x += nx * overlap * 0.1;
+    ball.y += ny * overlap * 0.1;
+    stack.x -= nx * overlap * 0.9;
+    stack.y -= ny * overlap * 0.9;
+
+    // White ball: reflect direction off the collision normal (Arkanoid-style)
+    const dotBall = ball.vx * nx + ball.vy * ny;
+    ball.vx -= 2 * dotBall * nx;
+    ball.vy -= 2 * dotBall * ny;
+    // Speed is re-normalized to BALL_SPEED in the main loop, so no need here
+
+    // Stack ball: receives a strong impulse from the hit
+    const impactSpeed = BALL_SPEED * 1.4;
+    stack.vx -= nx * impactSpeed;
+    stack.vy -= ny * impactSpeed;
+}
+
+function resolveStackCollisions() {
+    for (let i = 0; i < game.stackBalls.length; i++) {
+        if (!game.stackBalls[i].alive) continue;
+        for (let j = i + 1; j < game.stackBalls.length; j++) {
+            if (!game.stackBalls[j].alive) continue;
+            const a = game.stackBalls[i];
+            const b = game.stackBalls[j];
+            if (circleCollision(a, b)) {
+                const dx = a.x - b.x;
+                const dy = a.y - b.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const overlap = (a.radius + b.radius) - dist;
+                const nx = dx / dist;
+                const ny = dy / dist;
+                a.x += nx * overlap * 0.5;
+                a.y += ny * overlap * 0.5;
+                b.x -= nx * overlap * 0.5;
+                b.y -= ny * overlap * 0.5;
+                // Elastic pool-ball collision
+                const dvx = a.vx - b.vx;
+                const dvy = a.vy - b.vy;
+                const dvDotN = dvx * nx + dvy * ny;
+                if (dvDotN > 0) continue;
+                const restitution = 0.9;
+                const impulse = -(1 + restitution) * dvDotN / 2;
+                a.vx += impulse * nx;
+                a.vy += impulse * ny;
+                b.vx -= impulse * nx;
+                b.vy -= impulse * ny;
+            }
+        }
+    }
+}
+
+// =============================================================
+// UPDATE
+// =============================================================
+function update() {
+    if (!game.running || game.over) return;
+
+    // Time scale: 1.0 normal, 0.4 during slow motion (smooth, not stuttery)
+    const timeScale = game.activePower === 'slowMotion' ? 0.4 : 1.0;
+
+    game.tailWag += 0.15;
+
+    // Level announcement countdown
+    if (game.levelAnnounceTimer > 0) {
+        game.levelAnnounceTimer--;
+    }
+
+    // Notification timer
+    if (game.notificationTimer > 0) {
+        game.notificationTimer--;
+        if (game.notificationTimer <= 0) game.notification = null;
+    }
+
+    // Power-up timer
+    if (game.activePower) {
+        game.powerTimer--;
+        if (game.powerTimer <= 0) deactivatePower();
+    }
+
+    // Move goal
+    game.goalX += game.goalSpeed * game.goalDir * timeScale;
+    if (game.goalX <= 0) { game.goalX = 0; game.goalDir = 1; }
+    if (game.goalX >= W - GOAL_WIDTH) { game.goalX = W - GOAL_WIDTH; game.goalDir = -1; }
+
+    // Move goal guards
+    for (const g of game.guards) {
+        g.angle += g.speed * timeScale;
+        g.x = g.centerX + Math.cos(g.angle) * g.orbitRadius;
+        g.y = (GOAL_Y + GOAL_HEIGHT + 20) + Math.sin(g.angle) * g.orbitRadius * 0.5;
+    }
+
+    // Update active balls
+    for (let i = game.balls.length - 1; i >= 0; i--) {
+        const ball = game.balls[i];
+
+        if (ball.onPaddle) {
+            // Contact point flips when facing left
+            const cx = game.facingRight === false
+                ? game.paddleX + game.paddleWidth / 2 - PADDLE_CONTACT_X
+                : game.paddleX - game.paddleWidth / 2 + PADDLE_CONTACT_X;
+            ball.x = cx;
+            ball.y = PADDLE_Y + PADDLE_CONTACT_Y - ball.radius - 2;
+            continue;
+        }
+
+        // Arkanoid-style: constant speed, no friction, no slowdown
+        // Magnet power-up: gently nudge angle toward paddle
+        if (game.activePower === 'magnet' && ball.vy > 0) {
+            const dx = game.paddleX - ball.x;
+            const nudge = dx * 0.001;
+            ball.vx += nudge;
+        }
+
+        // Move
+        ball.x += ball.vx * timeScale;
+        ball.y += ball.vy * timeScale;
+
+        // Store trail positions
+        if (!ball.trail) ball.trail = [];
+        ball.trail.push({ x: ball.x, y: ball.y });
+        if (ball.trail.length > 12) ball.trail.shift();
+
+        // Normalize speed — white ball always travels at BALL_SPEED
+        const curSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+        if (curSpeed > 0) {
+            ball.vx = (ball.vx / curSpeed) * BALL_SPEED;
+            ball.vy = (ball.vy / curSpeed) * BALL_SPEED;
+        }
+
+        // Wall bounces (just reflect, speed stays constant)
+        if (ball.x - ball.radius < 0) {
+            ball.x = ball.radius;
+            ball.vx = Math.abs(ball.vx);
+            playSound('wall');
+        }
+        if (ball.x + ball.radius > W) {
+            ball.x = W - ball.radius;
+            ball.vx = -Math.abs(ball.vx);
+            playSound('wall');
+        }
+        if (ball.y - ball.radius < 0) {
+            ball.y = ball.radius;
+            ball.vy = Math.abs(ball.vy);
+            playSound('wall');
+        }
+
+        // Paddle collision — ball bounces off the contact point on Peach's back
+        const contactWorldY = PADDLE_Y + PADDLE_CONTACT_Y;
+        if (ball.vy > 0 && ball.y + ball.radius >= contactWorldY - 6 &&
+            ball.y + ball.radius <= contactWorldY + 10 &&
+            ball.x >= game.paddleX - game.paddleWidth / 2 &&
+            ball.x <= game.paddleX + game.paddleWidth / 2) {
+
+            // Sticky ball: catch and hold
+            if (game.activePower === 'stickyBall') {
+                ball.onPaddle = true;
+                ball.vx = 0;
+                ball.vy = 0;
+                game.ballLaunched = false;
+            } else {
+                ball.y = contactWorldY - ball.radius;
+                // Angle based on hit position, always at constant BALL_SPEED
+                const hitPos = (ball.x - game.paddleX) / (game.paddleWidth / 2);
+                const angle = hitPos * (Math.PI / 3); // max 60 degrees
+                ball.vx = Math.sin(angle) * BALL_SPEED;
+                ball.vy = -Math.cos(angle) * BALL_SPEED;
+            }
+            playSound('bounce');
+        }
+
+        // Ball fell below screen
+        if (ball.y - ball.radius > H) {
+            game.balls.splice(i, 1);
+            if (game.balls.length === 0) {
+                if (!game.debugInvincible) {
+                    game.lives--;
+                    playSound('miss');
+                    updateUI();
+                    if (game.lives <= 0) {
+                        showGameOver();
+                        return;
+                    }
+                }
+                game.ballLaunched = false;
+                spawnBall();
+            }
+            continue;
+        }
+
+        // Collision with stack balls
+        for (const stack of game.stackBalls) {
+            if (!stack.alive) continue;
+            if (circleCollision(ball, stack)) {
+                resolveCircleCollision(ball, stack);
+                // Destroy stack ball on hit
+                stack.alive = false;
+                game.score += 10;
+                addParticles(stack.x, stack.y, stack.color, 6);
+                if (Math.random() < 0.05) dropPowerUp(stack.x, stack.y);
+                playSound('hit');
+                updateUI();
+            }
+        }
+
+        // Collision with goal guards
+        for (const g of game.guards) {
+            const dx = ball.x - g.x;
+            const dy = ball.y - g.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < ball.radius + g.radius) {
+                const nx = dx / (dist || 1);
+                const ny = dy / (dist || 1);
+                // Reflect white ball off guard
+                const dot = ball.vx * nx + ball.vy * ny;
+                ball.vx -= 2 * dot * nx;
+                ball.vy -= 2 * dot * ny;
+                // Separate
+                ball.x += nx * (ball.radius + g.radius - dist);
+                ball.y += ny * (ball.radius + g.radius - dist);
+                playSound('hit');
+            }
+        }
+
+        // Collision with hazards
+        for (const hz of game.hazards) {
+            // Skip if this Roomba is already holding a ball
+            if (hz.type === 'roomba' && hz.holdingBall !== null) continue;
+
+            const dx = ball.x - hz.x;
+            const dy = ball.y - hz.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < ball.radius + hz.radius) {
+                if (hz.type === 'hydrant') {
+                    // Deflect at random angle (speed stays constant via normalization)
+                    const angle = Math.random() * Math.PI * 2;
+                    ball.vx = Math.cos(angle) * BALL_SPEED;
+                    ball.vy = Math.sin(angle) * BALL_SPEED;
+                } else if (hz.type === 'sprinkler') {
+                    // Reflect off sprinkler
+                    const nx = dx / (dist || 1);
+                    const ny = dy / (dist || 1);
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    ball.vx -= 2 * dot * nx;
+                    ball.vy -= 2 * dot * ny;
+                } else if (hz.type === 'squirrel') {
+                    // Squirrel scrambles direction
+                    const angle = Math.random() * Math.PI * 2;
+                    ball.vx = Math.cos(angle) * BALL_SPEED;
+                    ball.vy = Math.sin(angle) * BALL_SPEED;
+                } else if (hz.type === 'roomba') {
+                    // Suck in the ball — hold it for a moment then spit out
+                    hz.holdingBall = ball;
+                    hz.holdTimer = 60; // ~1 second hold
+                    ball.vx = 0;
+                    ball.vy = 0;
+                    ball.x = hz.x;
+                    ball.y = hz.y;
+                    playSound('hit');
+                    hz.timer = 60;
+                    continue; // skip the separation below
+                }
+                // Separate
+                const nx = dx / (dist || 1);
+                const ny = dy / (dist || 1);
+                ball.x = hz.x + nx * (ball.radius + hz.radius);
+                ball.y = hz.y + ny * (ball.radius + hz.radius);
+                hz.timer = 30;
+                playSound('hit');
+            }
+        }
+
+        // If ball is being held by a Roomba, lock its position
+        for (const hz of game.hazards) {
+            if (hz.type === 'roomba' && hz.holdingBall === ball) {
+                ball.x = hz.x;
+                ball.y = hz.y;
+                ball.vx = 0;
+                ball.vy = 0;
+            }
+        }
+
+        // Check goal scoring — ball must enter from the front (below, moving upward)
+        if (ball.vy < 0 &&
+            ball.y - ball.radius <= GOAL_Y + GOAL_HEIGHT &&
+            ball.y + ball.radius >= GOAL_Y &&
+            ball.x >= game.goalX && ball.x <= game.goalX + GOAL_WIDTH) {
+
+            // GOAL!
+            game.score += 100 + game.level * 25;
+            playSound('goal');
+            addParticles(ball.x, ball.y, '#00d4ff', 20);
+            showNotification('GOAL!', '#00d4ff');
+            game.balls.splice(i, 1);
+            updateUI();
+            // Advance level after brief pause
+            setTimeout(() => {
+                if (game.over) return;
+                game.level++;
+                playSound('levelUp');
+                updateUI();
+                setupLevel(game.level);
+            }, 1200);
+            return;
+        }
+    }
+
+    // Stack ball physics — pool table style (no gravity, friction slows them)
+    for (const stack of game.stackBalls) {
+        if (!stack.alive) continue;
+        // Only move if they've been hit (have velocity)
+        if (Math.abs(stack.vx) < 0.01 && Math.abs(stack.vy) < 0.01) {
+            stack.vx = 0;
+            stack.vy = 0;
+            continue;
+        }
+        stack.x += stack.vx * timeScale;
+        stack.y += stack.vy * timeScale;
+        // Friction deceleration
+        stack.vx *= STACK_FRICTION;
+        stack.vy *= STACK_FRICTION;
+
+        // Wall bounces (keep them in play area)
+        if (stack.x - stack.radius < 0) { stack.x = stack.radius; stack.vx = Math.abs(stack.vx) * 0.8; }
+        if (stack.x + stack.radius > W) { stack.x = W - stack.radius; stack.vx = -Math.abs(stack.vx) * 0.8; }
+        if (stack.y + stack.radius > PADDLE_Y - 10) {
+            stack.y = PADDLE_Y - 10 - stack.radius;
+            stack.vy = -Math.abs(stack.vy) * 0.8;
+        }
+        if (stack.y - stack.radius < GOAL_Y + GOAL_HEIGHT + 10) {
+            stack.y = GOAL_Y + GOAL_HEIGHT + 10 + stack.radius;
+            stack.vy = Math.abs(stack.vy) * 0.8;
+        }
+    }
+    resolveStackCollisions();
+
+    // Falling power-ups
+    for (let i = game.powerUps.length - 1; i >= 0; i--) {
+        const pu = game.powerUps[i];
+        pu.y += 2 * timeScale;
+        if (pu.y >= PADDLE_Y - 10 &&
+            pu.x >= game.paddleX - game.paddleWidth / 2 &&
+            pu.x <= game.paddleX + game.paddleWidth / 2) {
+            activatePower(pu.type);
+            game.powerUps.splice(i, 1);
+            continue;
+        }
+        if (pu.y > H) game.powerUps.splice(i, 1);
+    }
+
+    // Particles
+    for (let i = game.particles.length - 1; i >= 0; i--) {
+        const p = game.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1;
+        p.life--;
+        if (p.life <= 0) game.particles.splice(i, 1);
+    }
+
+    // Spawn squirrels from the sidelines on a timer
+    for (let i = game.squirrelQueue.length - 1; i >= 0; i--) {
+        game.squirrelQueue[i].delay -= timeScale;
+        if (game.squirrelQueue[i].delay <= 0) {
+            // Spawn from left or right edge
+            const fromLeft = Math.random() > 0.5;
+            const spawnX = fromLeft ? -20 : W + 20;
+            const targetY = 250 + Math.random() * 300;
+            const speed = 1.2 + Math.random() * 0.8;
+            game.hazards.push({
+                type: 'squirrel',
+                x: spawnX,
+                y: targetY,
+                radius: 15,
+                timer: 0,
+                vx: fromLeft ? speed : -speed,
+                facingRight: fromLeft,
+                frameTimer: 0,
+                frame: 0,
+            });
+            game.squirrelQueue.splice(i, 1);
+        }
+    }
+
+    // Hazard updates
+    for (const hz of game.hazards) {
+        if (hz.timer > 0) hz.timer--;
+        // Squirrel movement — patrols left/right
+        if (hz.type === 'squirrel' && hz.vx !== undefined) {
+            hz.x += hz.vx * timeScale;
+            hz.facingRight = hz.vx > 0;
+            // Bounce off walls
+            if (hz.x - hz.radius < 20) { hz.x = 20 + hz.radius; hz.vx = Math.abs(hz.vx); }
+            if (hz.x + hz.radius > W - 20) { hz.x = W - 20 - hz.radius; hz.vx = -Math.abs(hz.vx); }
+            // Animate sprite frames (fast)
+            hz.frameTimer += timeScale;
+            if (hz.frameTimer >= 6) {
+                hz.frameTimer = 0;
+                hz.frame = (hz.frame + 1) % 2;
+            }
+        }
+        // Roomba movement — wanders slowly, bounces off walls
+        if (hz.type === 'roomba') {
+            hz.spinAngle += 0.03 * timeScale;
+            // If holding a ball, count down then release
+            if (hz.holdingBall !== null) {
+                hz.holdTimer -= timeScale;
+                if (hz.holdTimer <= 0) {
+                    // Spit ball out in random direction
+                    const ball = hz.holdingBall;
+                    const angle = Math.random() * Math.PI * 2;
+                    ball.vx = Math.cos(angle) * BALL_SPEED;
+                    ball.vy = Math.sin(angle) * BALL_SPEED;
+                    ball.x = hz.x + Math.cos(angle) * (hz.radius + ball.radius + 4);
+                    ball.y = hz.y + Math.sin(angle) * (hz.radius + ball.radius + 4);
+                    hz.holdingBall = null;
+                    playSound('bounce');
+                }
+            }
+            // Move
+            hz.x += hz.vx * timeScale;
+            hz.y += hz.vy * timeScale;
+            // Bounce off walls
+            if (hz.x - hz.radius < 20) { hz.x = 20 + hz.radius; hz.vx = Math.abs(hz.vx); }
+            if (hz.x + hz.radius > W - 20) { hz.x = W - 20 - hz.radius; hz.vx = -Math.abs(hz.vx); }
+            if (hz.y - hz.radius < GOAL_Y + GOAL_HEIGHT + 20) { hz.y = GOAL_Y + GOAL_HEIGHT + 20 + hz.radius; hz.vy = Math.abs(hz.vy); }
+            if (hz.y + hz.radius > PADDLE_Y - 20) { hz.y = PADDLE_Y - 20 - hz.radius; hz.vy = -Math.abs(hz.vy); }
+            // Occasionally change direction slightly
+            if (Math.random() < 0.005) {
+                const angle = Math.atan2(hz.vy, hz.vx) + (Math.random() - 0.5) * 1.0;
+                hz.vx = Math.cos(angle) * 0.8;
+                hz.vy = Math.sin(angle) * 0.8;
+            }
+        }
+    }
+}
+
+// =============================================================
+// POWER-UPS
+// =============================================================
+function dropPowerUp(x, y) {
+    // Never more than one power-up on screen at a time
+    if (game.powerUps.length > 0) return;
+    const types = ['longCorgi', 'multiBall', 'stickyBall', 'slowMotion', 'magnet'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    game.powerUps.push({ x, y, type, radius: 12 });
+}
+
+function activatePower(type) {
+    playSound('powerUp');
+    // Deactivate previous power first
+    if (game.activePower) deactivatePower();
+    game.activePower = type;
+    game.powerTimer = POWER_UP_DURATION;
+
+    if (type === 'longCorgi') {
+        game.paddleWidth = PADDLE_WIDTH * 2.2;
+        showNotification('LONG CORGI!', '#00d4ff');
+    } else if (type === 'multiBall') {
+        const b = game.balls.find(b => !b.onPaddle);
+        if (b) {
+            for (let i = 0; i < 2; i++) {
+                // Spawn at same position, different angles, same constant speed
+                const angle = Math.atan2(b.vx, -b.vy) + (i === 0 ? 0.5 : -0.5);
+                game.balls.push({
+                    x: b.x, y: b.y,
+                    vx: Math.sin(angle) * BALL_SPEED,
+                    vy: -Math.cos(angle) * BALL_SPEED,
+                    radius: BALL_RADIUS,
+                    color: b.color,
+                    active: true,
+                    onPaddle: false,
+                    mass: 1,
+                });
+            }
+        }
+        showNotification('MULTI-BALL!', '#ff8c00');
+    } else if (type === 'stickyBall') {
+        showNotification('STICKY BALL!', '#f39c12');
+    } else if (type === 'slowMotion') {
+        showNotification('SLOW MOTION!', '#00a8cc');
+    } else if (type === 'magnet') {
+        showNotification('BALL MAGNET!', '#9b59b6');
+    }
+}
+
+function deactivatePower() {
+    if (game.activePower === 'longCorgi') {
+        game.paddleWidth = PADDLE_WIDTH;
+    }
+    game.activePower = null;
+    game.powerTimer = 0;
+}
+
+// =============================================================
+// HELPERS
+// =============================================================
+function addParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        game.particles.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6 - 2,
+            life: 20 + Math.random() * 15,
+            color,
+            radius: 2 + Math.random() * 3,
+        });
+    }
+}
+
+function showNotification(text, color) {
+    game.notification = { text, color };
+    game.notificationTimer = 120;
+}
+
+function showGameOver() {
+    game.over = true;
+    stopMusic();
+    playSound('gameOver');
+    document.getElementById('final-score').textContent = game.score;
+    document.getElementById('gameover-screen').classList.remove('hidden');
+}
+
+function restartGame() {
+    document.getElementById('gameover-screen').classList.add('hidden');
+    initGame();
+    game.running = true;
+    startScreen.classList.add('hidden');
+    startMusic();
+}
+
+function updateUI() {
+    scoreEl.textContent = game.score;
+    livesEl.textContent = game.lives;
+    levelEl.textContent = game.level;
+}
+
+// =============================================================
+// PULSING ORANGE GLOW LINES (over background)
+// =============================================================
+// Line segments traced from the background image's orange accents
+// Left side: 3 chevron segments; Right side: mirrored
+const GLOW_LINES_LEFT = [
+    // Upper-left chevron
+    [
+        [10, 48], [18, 60], [18, 190], [10, 202]
+    ],
+    // Mid-left chevron
+    [
+        [10, 260], [18, 272], [18, 448], [10, 460]
+    ],
+    // Lower-left chevron
+    [
+        [10, 518], [18, 530], [18, 660], [10, 672]
+    ],
+];
+
+function drawGlowLines() {
+    const pulse = 0.45 + Math.sin(Date.now() * 0.004) * 0.45; // 0.0–0.9 range
+    const glowAlpha = 0.3 + pulse * 0.5;
+    const blurSize = 4 + pulse * 8;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 120, 0, ${glowAlpha})`;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#ff6b00';
+    ctx.shadowBlur = blurSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Draw left side
+    for (const seg of GLOW_LINES_LEFT) {
+        ctx.beginPath();
+        ctx.moveTo(seg[0][0], seg[0][1]);
+        for (let i = 1; i < seg.length; i++) {
+            ctx.lineTo(seg[i][0], seg[i][1]);
+        }
+        ctx.stroke();
+    }
+
+    // Draw right side (mirrored)
+    for (const seg of GLOW_LINES_LEFT) {
+        ctx.beginPath();
+        ctx.moveTo(W - seg[0][0], seg[0][1]);
+        for (let i = 1; i < seg.length; i++) {
+            ctx.lineTo(W - seg[i][0], seg[i][1]);
+        }
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+// =============================================================
+// DRAW
+// =============================================================
+function draw() {
+    // Background
+    if (images.background) {
+        ctx.drawImage(images.background, 0, 0, W, H);
+    } else {
+        // Futuristic field background
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#1a2e1a');
+        grad.addColorStop(0.5, '#2d5a1e');
+        grad.addColorStop(1, '#1a2e1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+        // Metallic border edges
+        ctx.fillStyle = '#2a2a3a';
+        ctx.fillRect(0, 0, 12, H);
+        ctx.fillRect(W - 12, 0, 12, H);
+        // Orange accent lines on borders
+        ctx.fillStyle = '#ff6b00';
+        ctx.fillRect(2, 0, 2, H);
+        ctx.fillRect(W - 4, 0, 2, H);
+        // Subtle hex grid pattern
+        ctx.strokeStyle = 'rgba(0,212,255,0.04)';
+        ctx.lineWidth = 1;
+        for (let y = 0; y < H; y += 30) {
+            ctx.beginPath();
+            ctx.moveTo(12, y);
+            ctx.lineTo(W - 12, y);
+            ctx.stroke();
+        }
+        // Center circle
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 60, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Pulsing orange glow lines on border accents
+    drawGlowLines();
+
+    if (!game.running && !game.over) return;
+
+    // Draw goal
+    ctx.save();
+    if (images.goal) {
+        ctx.drawImage(images.goal, game.goalX, GOAL_Y, GOAL_WIDTH, GOAL_HEIGHT);
+    } else {
+        // Futuristic goal — cyan glow with metallic frame
+        ctx.fillStyle = '#00d4ff';
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 12;
+        // Hex mesh fill
+        ctx.fillRect(game.goalX + 3, GOAL_Y + 3, GOAL_WIDTH - 6, GOAL_HEIGHT - 6);
+        // Metallic frame
+        ctx.strokeStyle = '#c0c8d0';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 0;
+        ctx.strokeRect(game.goalX, GOAL_Y, GOAL_WIDTH, GOAL_HEIGHT);
+        // Orange accent corners
+        ctx.fillStyle = '#ff6b00';
+        ctx.fillRect(game.goalX, GOAL_Y, 4, 4);
+        ctx.fillRect(game.goalX + GOAL_WIDTH - 4, GOAL_Y, 4, 4);
+        ctx.fillRect(game.goalX, GOAL_Y + GOAL_HEIGHT - 4, 4, 4);
+        ctx.fillRect(game.goalX + GOAL_WIDTH - 4, GOAL_Y + GOAL_HEIGHT - 4, 4, 4);
+        // Inner glow text
+        ctx.font = 'bold 9px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('GOAL', game.goalX + GOAL_WIDTH / 2, GOAL_Y + GOAL_HEIGHT / 2 + 3);
+    }
+    ctx.restore();
+
+    // Goal guards — black balls with white outline + rotating spotlight
+    for (const g of game.guards) {
+        ctx.save();
+        // Rotating spotlight cone
+        const spotAngle = g.angle * 3; // rotates with orbit but faster
+        const spotSpread = Math.PI / 5; // cone width
+        const spotLen = g.radius * 4;
+        const gradient = ctx.createRadialGradient(g.x, g.y, g.radius, g.x + Math.cos(spotAngle) * spotLen * 0.5, g.y + Math.sin(spotAngle) * spotLen * 0.5, spotLen);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.beginPath();
+        ctx.moveTo(g.x, g.y);
+        ctx.arc(g.x, g.y, spotLen, spotAngle - spotSpread / 2, spotAngle + spotSpread / 2);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        // Ball body
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, g.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // Light reflection top-left
+        ctx.beginPath();
+        ctx.arc(g.x - g.radius * 0.3, g.y - g.radius * 0.3, g.radius * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Roombas and Squirrels drawn UNDER the colored balls (ground level)
+    for (const hz of game.hazards) {
+        if (hz.type !== 'roomba' && hz.type !== 'squirrel') continue;
+        ctx.save();
+        // Pinball flash: bright orange glow when hit
+        if (hz.timer > 0) {
+            ctx.shadowColor = '#ff6b00';
+            ctx.shadowBlur = 20 * (hz.timer / 30);
+        }
+        if (hz.type === 'roomba') {
+            const rw = 32;
+            const rh = 18.25;
+            if (images.roomba) {
+                ctx.drawImage(images.roomba, hz.x - rw, hz.y - rh, rw * 2, rh * 2);
+            } else {
+                ctx.beginPath();
+                ctx.ellipse(hz.x, hz.y, rw, rh, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#222';
+                ctx.fill();
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                const sa = hz.spinAngle || 0;
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(hz.x, hz.y, rw - 5, rh - 4, 0, sa, sa + Math.PI * 0.6);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(hz.x, hz.y, rw - 5, rh - 4, 0, sa + Math.PI, sa + Math.PI * 1.6);
+                ctx.stroke();
+                if (hz.holdingBall) {
+                    const p = 0.5 + Math.sin(Date.now() * 0.01) * 0.5;
+                    ctx.beginPath();
+                    ctx.arc(hz.x, hz.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 100, 0, ${p})`;
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(hz.x, hz.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#444';
+                    ctx.fill();
+                }
+            }
+        } else if (hz.type === 'squirrel') {
+            const squirrelImg = hz.frame === 0 ? images.squirrel1 : images.squirrel2;
+            if (squirrelImg) {
+                const drawW = 60;
+                const drawH = 35.5;
+                ctx.save();
+                if (!hz.facingRight) {
+                    ctx.translate(hz.x, hz.y);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(squirrelImg, -drawW / 2, -drawH / 2, drawW, drawH);
+                } else {
+                    ctx.drawImage(squirrelImg, hz.x - drawW / 2, hz.y - drawH / 2, drawW, drawH);
+                }
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#8B4513';
+                ctx.beginPath();
+                ctx.ellipse(hz.x, hz.y, 10, 14, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(hz.x + (hz.facingRight ? 8 : -8), hz.y - 10, 6, 10, hz.facingRight ? 0.5 : -0.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#A0522D';
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(hz.x - 3, hz.y - 4, 2, 0, Math.PI * 2);
+                ctx.arc(hz.x + 3, hz.y - 4, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+
+    // Stack balls (with shadows)
+    for (const stack of game.stackBalls) {
+        if (!stack.alive) continue;
+        ctx.save();
+        // Shadow underneath
+        ctx.beginPath();
+        ctx.ellipse(stack.x + 2, stack.y + 4, stack.radius * 0.9, stack.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fill();
+        // Ball
+        ctx.beginPath();
+        ctx.arc(stack.x, stack.y, stack.radius, 0, Math.PI * 2);
+        ctx.fillStyle = stack.color;
+        ctx.shadowColor = stack.color;
+        ctx.shadowBlur = 4;
+        ctx.fill();
+        // Highlight
+        ctx.beginPath();
+        ctx.arc(stack.x - stack.radius * 0.3, stack.y - stack.radius * 0.3, stack.radius * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Hazards drawn OVER the colored balls (tall objects: hydrants, sprinklers)
+    for (const hz of game.hazards) {
+        if (hz.type === 'roomba' || hz.type === 'squirrel') continue;
+        ctx.save();
+        // Pinball flash: bright orange glow when hit
+        if (hz.timer > 0) {
+            ctx.shadowColor = '#ff6b00';
+            ctx.shadowBlur = 24 * (hz.timer / 30);
+        }
+        if (hz.type === 'hydrant') {
+            if (images.hydrant) {
+                ctx.drawImage(images.hydrant, hz.x - 16.5, hz.y - 30, 33, 60);
+            } else {
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(hz.x - 16, hz.y - 24, 32, 48);
+                ctx.fillStyle = '#c0392b';
+                ctx.fillRect(hz.x - 22, hz.y - 12, 44, 12);
+                ctx.fillRect(hz.x - 18, hz.y + 12, 36, 8);
+                ctx.fillStyle = '#f39c12';
+                ctx.beginPath();
+                ctx.arc(hz.x, hz.y, 7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (hz.type === 'sprinkler') {
+            if (images.sprinkler) {
+                ctx.drawImage(images.sprinkler, hz.x - 15, hz.y - 15, 30, 30);
+            } else {
+                const spikeCount = 8;
+                const spikeLen = 10;
+                const rotation = (Date.now() * 0.002) % (Math.PI * 2);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < spikeCount; i++) {
+                    const angle = rotation + (Math.PI * 2 / spikeCount) * i;
+                    const sx = hz.x + Math.cos(angle) * hz.radius;
+                    const sy = hz.y + Math.sin(angle) * hz.radius;
+                    const ex = hz.x + Math.cos(angle) * (hz.radius + spikeLen);
+                    const ey = hz.y + Math.sin(angle) * (hz.radius + spikeLen);
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(ex, ey);
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                ctx.arc(hz.x, hz.y, hz.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#111';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(hz.x - hz.radius * 0.3, hz.y - hz.radius * 0.3, hz.radius * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+
+    // Falling power-up items
+    for (const pu of game.powerUps) {
+        ctx.save();
+        const pulse = 0.6 + Math.sin(Date.now() * 0.008) * 0.4; // pulsing 0.2–1.0
+        const puColors = { longCorgi:'#00d4ff', multiBall:'#ff8c00', stickyBall:'#f39c12', slowMotion:'#00a8cc', magnet:'#9b59b6' };
+        const color = puColors[pu.type] || '#fff';
+        // Outer pulsing glow
+        ctx.beginPath();
+        ctx.arc(pu.x, pu.y, pu.radius + 6, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = pulse * 0.3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 16 * pulse;
+        ctx.fill();
+        // Inner solid circle
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(pu.x, pu.y, pu.radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowBlur = 10 * pulse;
+        ctx.fill();
+        // Icon letter
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const icons = { longCorgi:'L', multiBall:'M', stickyBall:'S', slowMotion:'T', magnet:'⊕' };
+        ctx.fillText(icons[pu.type] || '?', pu.x, pu.y);
+        ctx.restore();
+    }
+
+    // Paddle (Peach) — drawn before active balls so ball appears on top
+    drawPeach();
+
+    // Active balls
+    for (const ball of game.balls) {
+        ctx.save();
+        // Glowing motion trail
+        if (ball.trail && ball.trail.length > 1 && !ball.onPaddle) {
+            for (let t = 0; t < ball.trail.length; t++) {
+                const alpha = (t / ball.trail.length) * 0.4;
+                const size = ball.radius * (0.3 + (t / ball.trail.length) * 0.7);
+                ctx.beginPath();
+                ctx.arc(ball.trail[t].x, ball.trail[t].y, size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 212, 255, ${alpha})`;
+                ctx.fill();
+            }
+        }
+        // Shadow underneath
+        ctx.beginPath();
+        ctx.ellipse(ball.x + 2, ball.y + 4, ball.radius * 0.9, ball.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fill();
+        if (images.ball) {
+            ctx.drawImage(images.ball, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
+        } else {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.shadowColor = ball.color === '#ffffff' ? '#00d4ff' : ball.color;
+            ctx.shadowBlur = ball.color === '#ffffff' ? 10 : 8;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(ball.x - 2, ball.y - 2, ball.radius * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // Particles
+    for (const p of game.particles) {
+        ctx.save();
+        ctx.globalAlpha = p.life / 35;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Power-up timer bar
+    if (game.activePower) {
+        const barWidth = (game.powerTimer / POWER_UP_DURATION) * 120;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(W / 2 - 62, H - 20, 124, 10);
+        const puColors = { longCorgi:'#00d4ff', multiBall:'#ff8c00', stickyBall:'#f39c12', slowMotion:'#00a8cc', magnet:'#9b59b6' };
+        ctx.fillStyle = puColors[game.activePower] || '#fff';
+        ctx.fillRect(W / 2 - 60, H - 18, barWidth, 6);
+    }
+
+    // Level announcement
+    if (game.levelAnnounceTimer > 0) {
+        ctx.save();
+        const alpha = Math.min(1, game.levelAnnounceTimer / 30);
+        ctx.globalAlpha = alpha;
+        ctx.font = 'bold 48px Arial, Helvetica, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillText('LEVEL ' + game.level, W / 2 + 2, H / 2 - 40 + 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 16;
+        ctx.fillText('LEVEL ' + game.level, W / 2, H / 2 - 40);
+        ctx.restore();
+    }
+
+    // Notification overlay
+    if (game.notification && game.notificationTimer > 0) {
+        ctx.save();
+        ctx.font = 'bold 32px Arial, Helvetica, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#000';
+        ctx.fillText(game.notification.text, W / 2 + 2, H / 2 + 2);
+        ctx.fillStyle = game.notification.color;
+        ctx.shadowColor = game.notification.color;
+        ctx.shadowBlur = 12;
+        ctx.fillText(game.notification.text, W / 2, H / 2);
+        ctx.restore();
+    }
+}
+
+// =============================================================
+// DRAW PEACH (Corgi Paddle)
+// =============================================================
+function drawPeach() {
+    const px = game.paddleX;
+    const py = PADDLE_Y;
+    const pw = game.paddleWidth;
+    const ph = game.paddleHeight;
+
+    // Track facing direction based on movement
+    const dx = game.paddleX - (game.prevPaddleX || game.paddleX);
+    if (dx > 0.5) game.facingRight = true;
+    else if (dx < -0.5) game.facingRight = false;
+    game.prevPaddleX = game.paddleX;
+
+    ctx.save();
+    // Hover glow — cyan ring with dark shadow center below Peach
+    const glowOffsetY = 14;
+    const glowCenterY = py + ph + glowOffsetY;
+    // Outer cyan glow
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(px, glowCenterY, pw * 0.38, 12, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 212, 255, 0.25)';
+    ctx.shadowColor = '#00d4ff';
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.restore();
+    // Inner dark shadow
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(px, glowCenterY, pw * 0.22, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+
+    if (images.peach) {
+        // Base image faces right; flip when moving left
+        if (game.facingRight === false) {
+            ctx.translate(px, py);
+            ctx.scale(-1, 1);
+            ctx.drawImage(images.peach, -pw / 2, 0, pw, ph);
+        } else {
+            ctx.drawImage(images.peach, px - pw / 2, py, pw, ph);
+        }
+    } else {
+        // Futuristic hover-disc paddle with corgi
+        // Disc base
+        ctx.fillStyle = '#3a3a4a';
+        ctx.beginPath();
+        ctx.ellipse(px, py + ph * 0.7, pw / 2, ph / 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Metallic rim
+        ctx.strokeStyle = '#c0c8d0';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Cyan glow ring
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.ellipse(px, py + ph * 0.7, pw / 2 - 4, ph / 3 - 3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // Orange accent marks
+        ctx.fillStyle = '#ff6b00';
+        ctx.fillRect(px - pw / 4, py + ph * 0.7 - 2, 8, 3);
+        ctx.fillRect(px + pw / 4 - 8, py + ph * 0.7 - 2, 8, 3);
+
+        // Corgi body on top
+        const bodyColor = '#e8a050';
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(px, py + ph * 0.3, pw / 4, ph / 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Head
+        ctx.beginPath();
+        ctx.arc(px - pw / 4 + 10, py + ph * 0.2, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Ears
+        ctx.fillStyle = '#c87830';
+        ctx.beginPath();
+        ctx.ellipse(px - pw / 4 + 5, py + 2, 4, 7, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // White chest
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(px - pw / 4 + 10, py + ph * 0.3, 4, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tail (wagging)
+        const wagAngle = Math.sin(game.tailWag) * 0.4;
+        ctx.save();
+        ctx.translate(px + pw / 4 - 6, py + ph * 0.2);
+        ctx.rotate(wagAngle);
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(4, -3, 3, 8, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+// =============================================================
+// ATTRACT MODE
+// =============================================================
+function startAttractDemo() {
+    attractMode = true;
+    attractDemoTimer = ATTRACT_DEMO_DURATION;
+    attractBreakFlag = false;
+    startScreen.classList.add('hidden');
+    initGame();
+    game.running = true;
+    game.debugInvincible = true;
+    // Auto-launch ball
+    if (game.balls.length > 0 && game.balls[0].onPaddle) {
+        launchBall();
+    }
+}
+
+function endAttractDemo() {
+    attractMode = false;
+    attractTimer = ATTRACT_TITLE_DURATION;
+    attractDemoTimer = 0;
+    stopMusic();
+    initGame();
+    startScreen.classList.remove('hidden');
+}
+
+function attractAI() {
+    let targetX = game.paddleX;
+    let bestTime = Infinity;
+    for (const ball of game.balls) {
+        if (ball.onPaddle) continue;
+        if (ball.vy > 0) {
+            const timeToP = (PADDLE_Y - ball.y) / ball.vy;
+            if (timeToP > 0 && timeToP < bestTime) {
+                bestTime = timeToP;
+                targetX = ball.x + ball.vx * timeToP * 0.5;
+            }
+        }
+    }
+    const dx = targetX - game.paddleX;
+    game.paddleX += dx * 0.08;
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, game.paddleX));
+}
+
+// =============================================================
+// GAME LOOP
+// =============================================================
+function gameLoop() {
+    // Attract mode: title timer countdown
+    if (!game.running && !game.over && !attractMode) {
+        attractTimer--;
+        if (attractTimer <= 0) startAttractDemo();
+    }
+
+    // Attract mode: AI + timer
+    if (attractMode) {
+        if (attractBreakFlag) {
+            endAttractDemo();
+        } else {
+            attractDemoTimer--;
+            if (attractDemoTimer <= 0) {
+                endAttractDemo();
+            } else {
+                attractAI();
+            }
+        }
+    }
+
+    // Update always runs at full framerate — slow motion uses a speed multiplier
+    update();
+
+    draw();
+
+    // Attract mode blink overlay
+    if (attractMode) {
+        const blink = Math.floor(Date.now() / 500) % 2;
+        if (blink) {
+            ctx.save();
+            ctx.font = 'bold 22px Arial, Helvetica, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#00d4ff';
+            ctx.shadowColor = '#00d4ff';
+            ctx.shadowBlur = 10;
+            ctx.fillText('CLICK OR TAP TO START', W / 2, H - 30);
+            ctx.restore();
+        }
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+// =============================================================
+// INPUT — Start / Restart
+// =============================================================
+function startGame() {
+    if (attractMode) {
+        endAttractDemo();
+    }
+    if (!game.running && !game.over) {
+        game.running = true;
+        startScreen.classList.add('hidden');
+        attractMode = false;
+        ensureSynthCtx();
+        resumeAudio();
+        playSound('gameStart');
+        startMusic();
+    }
+}
+
+startScreen.addEventListener('click', e => {
+    e.stopPropagation();
+    startGame();
+});
+startScreen.addEventListener('touchstart', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    startGame();
+}, { passive: false });
+
+const gameoverScreen = document.getElementById('gameover-screen');
+gameoverScreen.addEventListener('click', () => { if (game.over) restartGame(); });
+gameoverScreen.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (game.over) restartGame();
+}, { passive: false });
+
+// =============================================================
+// INPUT — Mouse
+// =============================================================
+canvas.addEventListener('mousemove', e => {
+    if (attractMode) { attractBreakFlag = true; return; }
+    const rect = canvas.getBoundingClientRect();
+    game.paddleX = (e.clientX - rect.left) * (W / rect.width);
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, game.paddleX));
+});
+
+canvas.addEventListener('click', () => {
+    if (attractMode) { endAttractDemo(); startGame(); return; }
+    if (game.over) { restartGame(); return; }
+    if (game.running) launchBall();
+});
+
+// =============================================================
+// INPUT — Touch on canvas
+// =============================================================
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (attractMode) { endAttractDemo(); startGame(); return; }
+    if (game.over) { restartGame(); return; }
+    if (game.running) launchBall();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    game.paddleX = (touch.clientX - rect.left) * (W / rect.width);
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, game.paddleX));
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    game.paddleX = (touch.clientX - rect.left) * (W / rect.width);
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, game.paddleX));
+}, { passive: false });
+
+// Prevent pull-to-refresh
+document.addEventListener('touchmove', e => {
+    if (e.target === canvas) e.preventDefault();
+}, { passive: false });
+
+// =============================================================
+// INPUT — Keyboard
+// =============================================================
+let keysDown = {};
+
+document.addEventListener('keydown', e => {
+    keysDown[e.key] = true;
+    if (attractMode) { attractBreakFlag = true; return; }
+    if ((e.key === 'q' || e.key === 'Q') && game.running) {
+        stopMusic();
+        initGame();
+        startScreen.classList.remove('hidden');
+        attractTimer = ATTRACT_TITLE_DURATION;
+        return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+        if (game.over) restartGame();
+    }
+    if (e.key === ' ' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!game.running && !attractMode) {
+            startGame();
+        } else if (game.running) {
+            launchBall();
+        }
+    }
+});
+document.addEventListener('keyup', e => { keysDown[e.key] = false; });
+
+function handleKeyboardMovement() {
+    if (!game.running || game.over) return;
+    const speed = 7;
+    if (keysDown['ArrowLeft'] || keysDown['a'] || keysDown['A']) {
+        game.paddleX -= speed;
+    }
+    if (keysDown['ArrowRight'] || keysDown['d'] || keysDown['D']) {
+        game.paddleX += speed;
+    }
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, game.paddleX));
+}
+
+// =============================================================
+// INPUT — Touch Pad (mobile slider below canvas)
+// =============================================================
+const touchPad = document.getElementById('touch-pad');
+const trackIndicator = touchPad.querySelector('.track-indicator');
+
+touchPad.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (attractMode) { endAttractDemo(); startGame(); return; }
+    if (game.over) { restartGame(); return; }
+    if (game.running) launchBall();
+    const padRect = touchPad.getBoundingClientRect();
+    const touch = e.touches[0];
+    const ratio = (touch.clientX - padRect.left) / padRect.width;
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, ratio * W));
+    trackIndicator.style.display = 'block';
+    trackIndicator.style.left = (touch.clientX - padRect.left) + 'px';
+}, { passive: false });
+
+touchPad.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const padRect = touchPad.getBoundingClientRect();
+    const touch = e.touches[0];
+    const ratio = (touch.clientX - padRect.left) / padRect.width;
+    game.paddleX = Math.max(game.paddleWidth / 2, Math.min(W - game.paddleWidth / 2, ratio * W));
+    trackIndicator.style.left = (touch.clientX - padRect.left) + 'px';
+}, { passive: false });
+
+touchPad.addEventListener('touchend', () => {
+    trackIndicator.style.display = 'none';
+}, { passive: false });
+
+// =============================================================
+// INIT
+// =============================================================
+async function init() {
+    await Promise.all([
+        loadImage('peach', CUSTOM_ASSETS.peachImage),
+        loadImage('ball', CUSTOM_ASSETS.ballImage),
+        loadImage('background', CUSTOM_ASSETS.backgroundImage),
+        loadImage('logo', CUSTOM_ASSETS.logoImage),
+        loadImage('titleBg', CUSTOM_ASSETS.titleBgImage),
+        loadImage('gameoverBg', CUSTOM_ASSETS.gameoverBgImage),
+        loadImage('goal', CUSTOM_ASSETS.goalImage),
+        loadImage('hydrant', CUSTOM_ASSETS.hydrantImage),
+        loadImage('sprinkler', CUSTOM_ASSETS.sprinklerImage),
+        loadImage('squirrel1', CUSTOM_ASSETS.squirrel1Image),
+        loadImage('squirrel2', CUSTOM_ASSETS.squirrel2Image),
+        loadImage('roomba', CUSTOM_ASSETS.roombaImage),
+    ]);
+
+    // Show logo on splash if provided
+    if (images.logo) {
+        const logoEl = document.getElementById('title-logo');
+        logoEl.src = CUSTOM_ASSETS.logoImage;
+        logoEl.classList.remove('hidden');
+        startScreen.classList.add('has-logo');
+    }
+
+    // Title screen background
+    if (images.titleBg) {
+        const startBgEl = document.getElementById('start-bg');
+        startBgEl.src = CUSTOM_ASSETS.titleBgImage;
+        startBgEl.classList.remove('hidden');
+    }
+
+    // Game over screen background
+    if (images.gameoverBg) {
+        const gameoverBgEl = document.getElementById('gameover-bg');
+        gameoverBgEl.src = CUSTOM_ASSETS.gameoverBgImage;
+        gameoverBgEl.classList.remove('hidden');
+    }
+
+    // Load sounds
+    loadSound('bounce', CUSTOM_ASSETS.bounceSound, 0.4);
+    loadSound('goal', CUSTOM_ASSETS.goalSound, 0.6);
+    loadSound('hit', CUSTOM_ASSETS.hitSound, 0.3);
+    loadSound('levelUp', CUSTOM_ASSETS.levelUpSound, 0.6);
+    loadSound('gameOver', CUSTOM_ASSETS.gameOverSound, 0.5);
+    loadSound('gameStart', CUSTOM_ASSETS.gameStartSound, 0.5);
+    loadSound('powerUp', CUSTOM_ASSETS.powerUpSound, 0.5);
+    loadSound('miss', CUSTOM_ASSETS.missSound, 0.5);
+    loadSound('wall', CUSTOM_ASSETS.wallSound, 0.2);
+    loadSound('wrongColor', CUSTOM_ASSETS.wrongColorSound, 0.4);
+    loadMusic(CUSTOM_ASSETS.backgroundMusic);
+
+    initGame();
+
+    // Wrap game loop to include keyboard movement
+    function mainLoop() {
+        handleKeyboardMovement();
+        gameLoop();
+    }
+    // gameLoop calls requestAnimationFrame internally, so just kick it off
+    handleKeyboardMovement();
+    gameLoop();
+
+    // Keyboard movement runs on its own interval for smooth response
+    setInterval(handleKeyboardMovement, 16);
+}
+
+// =============================================================
+// ANIMATED HEX GRID BACKGROUND (Title Screen)
+// =============================================================
+(function() {
+    const hexCanvas = document.getElementById('hex-bg');
+    const hctx = hexCanvas.getContext('2d');
+    const hexSize = 24; // radius of each hexagon
+    const lineWidth = 0.8;
+    const color = '#00d4ff'; // cyan from the logo
+    let animFrame = 0;
+
+    function resizeHex() {
+        const parent = hexCanvas.parentElement;
+        hexCanvas.width = parent.offsetWidth;
+        hexCanvas.height = parent.offsetHeight;
+    }
+    resizeHex();
+    window.addEventListener('resize', resizeHex);
+
+    function drawHexagon(cx, cy, r) {
+        hctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            if (i === 0) hctx.moveTo(x, y);
+            else hctx.lineTo(x, y);
+        }
+        hctx.closePath();
+    }
+
+    function animateHex() {
+        animFrame++;
+        const w = hexCanvas.width;
+        const h = hexCanvas.height;
+        if (w === 0 || h === 0) { requestAnimationFrame(animateHex); return; }
+
+        hctx.clearRect(0, 0, w, h);
+
+        const colSpacing = hexSize * 1.75;
+        const rowSpacing = hexSize * 1.5;
+        const cols = Math.ceil(w / colSpacing) + 2;
+        const rows = Math.ceil(h / rowSpacing) + 2;
+
+        // Traveling wave: a bright pulse moves diagonally across the grid
+        const waveSpeed = 0.02;
+        const wavePos = (animFrame * waveSpeed) % 3.0; // cycles through
+
+        for (let row = -1; row < rows; row++) {
+            for (let col = -1; col < cols; col++) {
+                const offsetX = (row % 2) * (colSpacing / 2);
+                const cx = col * colSpacing + offsetX;
+                const cy = row * rowSpacing;
+
+                // Distance from wave front (diagonal)
+                const normX = cx / w;
+                const normY = cy / h;
+                const dist = Math.abs((normX + normY) - wavePos);
+                const waveBrightness = Math.max(0, 1 - dist * 4);
+
+                // Base alpha + wave pulse
+                const baseAlpha = 0.08;
+                const alpha = baseAlpha + waveBrightness * 0.35;
+
+                hctx.strokeStyle = color;
+                hctx.lineWidth = lineWidth + waveBrightness * 0.8;
+                hctx.globalAlpha = alpha;
+                drawHexagon(cx, cy, hexSize);
+                hctx.stroke();
+            }
+        }
+        hctx.globalAlpha = 1;
+
+        requestAnimationFrame(animateHex);
+    }
+    animateHex();
+})();
+
+init();
+</script>
+
+<script>
+// QR Code
+(function(){
+    var qr = qrcode(0, 'L');
+    qr.addData('https://www.paypal.com/donate/?hosted_button_id=HDD77QKGC6XXN');
+    qr.make();
+    var el = document.getElementById('qr-code');
+    if (el) el.innerHTML = qr.createSvgTag({cellSize:2, margin:0});
+})();
+</script>
+</body>
+</html>
